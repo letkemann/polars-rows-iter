@@ -1,4 +1,4 @@
-use polars::prelude::*;
+use polars::df;
 use polars_rows_iter::*;
 
 #[derive(Debug, FromDataFrameRow)]
@@ -22,7 +22,7 @@ fn test() {
 
     println!("{df:?}");
 
-    let iter = df.rows_iter::<DataRow0>().unwrap();
+    let iter = df.rows_iter::<DataRow1>().unwrap();
 
     for row in iter {
         let row = row.unwrap();

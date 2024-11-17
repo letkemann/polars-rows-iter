@@ -1,5 +1,3 @@
-use std::iter::once;
-
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
@@ -94,7 +92,7 @@ fn create_impl_generics(struct_generics: &Generics, lifetime: &LifetimeParam) ->
     let generics = struct_generics
         .type_params()
         .map(|p| GenericParam::Type(p.clone()))
-        .chain(once(GenericParam::Lifetime(lifetime.clone())));
+        .chain(std::iter::once(GenericParam::Lifetime(lifetime.clone())));
 
     let generics = Generics {
         lt_token: Some(Token![<](Span::call_site())),
@@ -142,7 +140,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
     quote::quote! {
         #[automatically_derived]
         impl #impl_generics FromDataFrameRow #lifetime_generics for #struct_ident {
-            fn from_dataframe(dataframe: & #lifetime DataFrame) ->  PolarsResult<Box<dyn Iterator<Item = PolarsResult<Self>> + #lifetime>>
+            fn from_dataframe(dataframe: & #lifetime polars::prelude::DataFrame) ->  polars::prelude::PolarsResult<Box<dyn Iterator<Item = polars::prelude::PolarsResult<Self>> + #lifetime>>
                 where
                     Self: Sized
             {
@@ -173,7 +171,7 @@ fn create_iterator_struct_field(field_info: &FieldInfo, lifetime: &LifetimeParam
     let ident = &field_info.iter_ident;
     let ty = coerce_lifetime(field_info.ty.clone(), lifetime);
     quote! {
-        #ident : Box<dyn Iterator<Item = PolarsResult<#ty>> + #lifetime>
+        #ident : Box<dyn Iterator<Item = polars::prelude::PolarsResult<#ty>> + #lifetime>
     }
 }
 
@@ -201,7 +199,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let fn_params = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
         let ty = coerce_lifetime(field_info.ty.clone(), &lifetime);
-        quote! { #ident: PolarsResult<#ty> }
+        quote! { #ident: polars::prelude::PolarsResult<#ty> }
     });
 
     let assignments = ctx.fields_list.iter().map(|field_info| {
@@ -222,7 +220,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
         impl<#lifetime> #iter_struct_ident <#lifetime> {
             fn create(
                 #(#fn_params,)*
-            ) -> PolarsResult<#struct_ident_with_lifetime_if_nec> {
+            ) -> polars::prelude::PolarsResult<#struct_ident_with_lifetime_if_nec> {
 
                 Ok(#struct_ident {
                     #(#assignments,)*
@@ -276,7 +274,7 @@ fn create_iterator_impl_for_iterator_struct(ctx: &Context) -> proc_macro2::Token
 
     quote! {
         impl<#lifetime> Iterator for #iter_struct_ident<#lifetime> {
-            type Item = PolarsResult<#struct_ident>;
+            type Item = polars::prelude::PolarsResult<#struct_ident>;
 
             fn next(&mut self) -> Option<Self::Item> {
                 #(#next_value_list;)*
