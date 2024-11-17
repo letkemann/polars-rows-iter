@@ -1,20 +1,10 @@
 [package]
 name = "polars-rows-iter"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 polars.workspace = true
 polars-rows-iter-derive = { path = "../polars-rows-iter-derive" }
-
-[features]
-dtype-date = ["polars/dtype-date"]
-dtype-datetime = ["polars/dtype-datetime"]
-dtype-time = ["polars/dtype-time"]
-dtype-duration = ["polars/dtype-duration"]
-dtype-i8 = ["polars/dtype-i8"]
-dtype-i16 = ["polars/dtype-i16"]
-dtype-u8 = ["polars/dtype-u8"]
-dtype-u16 = ["polars/dtype-u16"]
-dtype-categorical = ["polars/dtype-categorical"]
-dtype-struct = ["polars/dtype-struct"]

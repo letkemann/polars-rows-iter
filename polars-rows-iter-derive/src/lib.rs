@@ -1,3 +1,7 @@
+//! # polars-rows-iter-derive
+//!
+//! This crate exports the macros required by the main polars-rows-iter crate.
+
 mod from_dataframe_row_derive;
 mod impl_iter_from_column_for_type;
 

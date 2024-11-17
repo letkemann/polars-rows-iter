@@ -1,67 +1,80 @@
-use polars::prelude::*;
-pub use polars_rows_iter_derive::*;
+//! # Polars rows iterator
+//!
+//! Simple and convenient iteration of polars dataframe rows.
+//!
+//! ##### Example: Dataframe without None/null values:
+//! ```rust
+//! use polars::prelude::*;
+//! use polars_rows_iter::*;
+//!
+//! #[derive(Debug, FromDataFrameRow, PartialEq)]
+//! struct MyRow<'a>
+//! {
+//!     col_a: i32,
+//!     col_b: &'a str
+//! }
+//!
+//! let df = df!(
+//!         "col_a" => [1i32, 2, 3, 4, 5],
+//!         "col_b" => ["a", "b", "c", "d", "e"]
+//!     ).unwrap();
+//!
+//! let rows_iter = df.rows_iter::<MyRow>().unwrap();
+//! // unwrap rows and collect to vector
+//! let rows_vec = rows_iter.map(|row|row.unwrap()).collect::<Vec<MyRow>>();
+//!
+//! assert_eq!(
+//!     rows_vec,
+//!     [
+//!         MyRow { col_a: 1, col_b: "a" },
+//!         MyRow { col_a: 2, col_b: "b" },
+//!         MyRow { col_a: 3, col_b: "c" },
+//!         MyRow { col_a: 4, col_b: "d" },
+//!         MyRow { col_a: 5, col_b: "e" },
+//!     ]
+//! );
+//! ```
+//! Every row is wrapped with a PolarsError, in case of an unexpected null value the row creation fails and the iterator
+//! returns an Err(...) for the row. One can decide to cancel the iteration or to skip the affected row.
+//!
+//! ##### Example: Dataframe with valid None/null values:
+//! ```rust
+//! use polars::prelude::*;
+//! use polars_rows_iter::*;
+//!
+//! #[derive(Debug, FromDataFrameRow, PartialEq)]
+//! struct MyRow<'a>
+//! {
+//!     col_a: i32,
+//!     col_b: Option<&'a str>
+//! }
+//!
+//! let df = df!(
+//!         "col_a" => [1i32, 2, 3, 4, 5],
+//!         "col_b" => [Some("a"), None, Some("c"), None, Some("e")]
+//!     ).unwrap();
+//!
+//! let rows_iter = df.rows_iter::<MyRow>().unwrap();
+//! // unwrap rows and collect to vector
+//! let rows_vec = rows_iter.map(|row|row.unwrap()).collect::<Vec<MyRow>>();
+//!
+//! assert_eq!(
+//!     rows_vec,
+//!     [
+//!         MyRow { col_a: 1, col_b: Some("a") },
+//!         MyRow { col_a: 2, col_b: None },
+//!         MyRow { col_a: 3, col_b: Some("c") },
+//!         MyRow { col_a: 4, col_b: None },
+//!         MyRow { col_a: 5, col_b: Some("e") },
+//!     ]
+//! );
+//! ```
 
-// iter_from_column_for_type!(i8);
+mod dataframe_rows_iter_ext;
+mod from_dataframe_row;
+mod iter_from_column;
 
-pub trait FromDataFrameRow<'a> {
-    fn from_dataframe(dataframe: &'a DataFrame) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<Self>> + 'a>>
-    where
-        Self: Sized;
-}
-
-pub trait IterFromColumn<'a> {
-    fn create_iter(
-        dataframe: &'a DataFrame,
-        column_name: &'a str,
-    ) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<Self>> + 'a>>
-    where
-        Self: Sized;
-}
-
-pub trait DataframeRowsIterExt<'a> {
-    fn rows_iter<T>(&'a self) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
-    where
-        T: FromDataFrameRow<'a>;
-}
-
-impl<'a> DataframeRowsIterExt<'a> for DataFrame {
-    fn rows_iter<T>(&'a self) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
-    where
-        T: FromDataFrameRow<'a>,
-    {
-        Ok(T::from_dataframe(self)?)
-    }
-}
-
-fn mandatory_value<T>(polars_value: Option<T>) -> PolarsResult<T> {
-    match polars_value {
-        Some(value) => Ok(value),
-        None => Err(polars_err!(SchemaMismatch: "Found unexpected None/null value in columns with mandatory values!")),
-    }
-}
-
-fn optional_value<T>(polars_value: Option<T>) -> PolarsResult<Option<T>> {
-    Ok(polars_value)
-}
-
-impl<'a> IterFromColumn<'a> for &'a str {
-    fn create_iter(
-        dataframe: &'a DataFrame,
-        column_name: &'a str,
-    ) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<Self>> + 'a>> {
-        let iter = Box::new(dataframe.column(column_name)?.str()?.into_iter().map(mandatory_value));
-        Ok(iter)
-    }
-}
-
-iter_from_column_for_type!(bool);
-iter_from_column_for_type!(i8);
-iter_from_column_for_type!(i16);
-iter_from_column_for_type!(i32);
-iter_from_column_for_type!(i64);
-iter_from_column_for_type!(u8);
-iter_from_column_for_type!(u16);
-iter_from_column_for_type!(u32);
-iter_from_column_for_type!(u64);
-iter_from_column_for_type!(f32);
-iter_from_column_for_type!(f64);
+pub use dataframe_rows_iter_ext::*;
+pub use from_dataframe_row::*;
+pub use iter_from_column::*;
+pub use polars_rows_iter_derive::FromDataFrameRow;
