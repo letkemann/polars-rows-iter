@@ -8,3 +8,7 @@ repository.workspace = true
 [dependencies]
 polars.workspace = true
 polars-rows-iter-derive = { path = "../polars-rows-iter-derive" }
+
+[features]
+default = []
+dtype-categorical = ["polars/dtype-categorical"]

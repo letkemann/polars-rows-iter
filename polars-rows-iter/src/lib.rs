@@ -69,6 +69,9 @@
 //!     ]
 //! );
 //! ```
+//!
+//! ## Limitations
+//! Currently supports only primitive and string/categorical types
 
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
