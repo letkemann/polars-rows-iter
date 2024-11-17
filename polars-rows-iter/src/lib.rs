@@ -7,10 +7,13 @@
 //! use polars::prelude::*;
 //! use polars_rows_iter::*;
 //!
-//! #[derive(Debug, FromDataFrameRow, PartialEq)]
+//! #[derive(Debug, FromDataFrameRow)]
+//! #[derive(PartialEq)] // for assert_eq
 //! struct MyRow<'a>
 //! {
-//!     col_a: i32,
+//!     #[column("col_a")]
+//!     a: i32,
+//!     // the column name defaults to the field name if no explicit name given
 //!     col_b: &'a str
 //! }
 //!
@@ -26,11 +29,11 @@
 //! assert_eq!(
 //!     rows_vec,
 //!     [
-//!         MyRow { col_a: 1, col_b: "a" },
-//!         MyRow { col_a: 2, col_b: "b" },
-//!         MyRow { col_a: 3, col_b: "c" },
-//!         MyRow { col_a: 4, col_b: "d" },
-//!         MyRow { col_a: 5, col_b: "e" },
+//!         MyRow { a: 1, col_b: "a" },
+//!         MyRow { a: 2, col_b: "b" },
+//!         MyRow { a: 3, col_b: "c" },
+//!         MyRow { a: 4, col_b: "d" },
+//!         MyRow { a: 5, col_b: "e" },
 //!     ]
 //! );
 //! ```
@@ -42,7 +45,8 @@
 //! use polars::prelude::*;
 //! use polars_rows_iter::*;
 //!
-//! #[derive(Debug, FromDataFrameRow, PartialEq)]
+//! #[derive(Debug, FromDataFrameRow)]
+//! #[derive(PartialEq)] // for assert_eq
 //! struct MyRow<'a>
 //! {
 //!     col_a: i32,

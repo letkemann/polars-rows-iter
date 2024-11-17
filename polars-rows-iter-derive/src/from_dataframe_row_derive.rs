@@ -1,5 +1,4 @@
-use proc_macro::TokenStream;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
     punctuated::Punctuated, DeriveInput, Field, GenericParam, Generics, Ident, Lifetime, LifetimeParam, Token, Type,
@@ -13,6 +12,7 @@ struct FieldInfo {
     pub ident: Ident,
     pub iter_ident: Ident,
     pub ty: Type,
+    pub column_name: String,
 }
 
 struct Context {
@@ -44,6 +44,7 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
     let fields_list: Vec<_> = struct_data
         .fields
         .iter()
+        .cloned()
         .map(create_iterator_struct_field_info)
         .collect();
 
@@ -119,7 +120,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
 
     let iter_create_list = ctx.fields_list.iter().map(|f| {
         let iter_ident = &f.iter_ident;
-        let column_name = f.name.as_str();
+        let column_name = f.column_name.as_str();
         quote! { let #iter_ident = IterFromColumn::create_iter(dataframe, #column_name)? }
     });
 
@@ -152,18 +153,31 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
     }
 }
 
-fn create_iterator_struct_field_info(field: &Field) -> FieldInfo {
+#[derive(Debug, deluxe::ExtractAttributes)]
+#[deluxe(attributes(column))]
+struct ColumnFieldAttributes(#[deluxe(flatten)] Vec<String>);
+
+fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
     let ident = field.ident.as_ref().expect("anonymous fields not supported").clone();
     let name = ident.to_string();
 
     let iter_ident = Ident::new(format!("{name}_iter").as_str(), Span::call_site());
     let ty = field.ty.clone();
 
+    let attrs: ColumnFieldAttributes = deluxe::extract_attributes(&mut field).unwrap();
+
+    let column_name = match attrs.0.len() {
+        0 => name.clone(),
+        1 => attrs.0[0].clone(),
+        _ => panic!("Field '{name}' can have only one column name"),
+    };
+
     FieldInfo {
         name,
         ident,
         iter_ident,
         ty,
+        column_name,
     }
 }
 

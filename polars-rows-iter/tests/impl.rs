@@ -3,20 +3,23 @@ use polars_rows_iter::*;
 
 #[derive(Debug, FromDataFrameRow)]
 struct DataRow0<'a> {
-    _col_x: i32,
-    _col_y: &'a str,
+    #[column("col_x")]
+    _x: i32,
+    #[column("col_y")]
+    _y: &'a str,
 }
 
 #[derive(Debug, FromDataFrameRow)]
 struct DataRow1 {
-    _col_x: i32,
+    #[column("col_x")]
+    _x: i32,
 }
 
 #[test]
 fn test() {
     let df = df!(
-        "_col_x" => [1i32, 2, 3, 4],
-        "_col_y" => ["a", "b", "c", "d"]
+        "col_x" => [1i32, 2, 3, 4],
+        "col_y" => ["a", "b", "c", "d"]
     )
     .unwrap();
 
