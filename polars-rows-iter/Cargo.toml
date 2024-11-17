@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Library for easy and convenient row iteration of polars dataframes"
+keywords = ["polars", "row", "rows", "iter", "iterator"]
 
 [dependencies]
 polars.workspace = true

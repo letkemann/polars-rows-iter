@@ -22,8 +22,8 @@
 //!         "col_b" => ["a", "b", "c", "d", "e"]
 //!     ).unwrap();
 //!
-//! let rows_iter = df.rows_iter::<MyRow>().unwrap();
-//! // unwrap rows and collect to vector
+//! let rows_iter = df.rows_iter::<MyRow>().unwrap(); // ready to use row iterator
+//! // unwrap rows and collect to vector for assert_eq
 //! let rows_vec = rows_iter.map(|row|row.unwrap()).collect::<Vec<MyRow>>();
 //!
 //! assert_eq!(
@@ -58,8 +58,8 @@
 //!         "col_b" => [Some("a"), None, Some("c"), None, Some("e")]
 //!     ).unwrap();
 //!
-//! let rows_iter = df.rows_iter::<MyRow>().unwrap();
-//! // unwrap rows and collect to vector
+//! let rows_iter = df.rows_iter::<MyRow>().unwrap(); // ready to use row iterator
+//! // unwrap rows and collect to vector for assert_eq
 //! let rows_vec = rows_iter.map(|row|row.unwrap()).collect::<Vec<MyRow>>();
 //!
 //! assert_eq!(
