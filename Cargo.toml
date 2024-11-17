@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["polars-rows-iter"]
+members = ["polars-rows-iter", "polars-rows-iter-derive"]
 
 [workspace.dependencies]
 polars = "0.44.2"
