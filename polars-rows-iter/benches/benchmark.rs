@@ -1,5 +1,5 @@
 use criterion::*;
-use itertools::multizip;
+use itertools::izip;
 use polars::prelude::*;
 use polars_rows_iter::*;
 use rand::{
@@ -246,12 +246,17 @@ fn add_all_column_types_group(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new(".rows_iter()", height), &dataframe, |b, df| {
             b.iter(|| {
-                iterate_with_polars_rows_iter::<AllTypesRow>(black_box(df)).unwrap();
+                iterate_with_polars_rows_iter::<AllTypesRow>(df).unwrap();
             })
         });
         group.bench_with_input(BenchmarkId::new(".get_row()", height), &dataframe, |b, df| {
             b.iter(|| {
-                iterate_with_polars_get_row(black_box(df)).unwrap();
+                iterate_with_polars_get_row(df).unwrap();
+            })
+        });
+        group.bench_with_input(BenchmarkId::new(".izip()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_all_types_with_zipped_column_iterators(df).unwrap();
             })
         });
     }
@@ -310,7 +315,7 @@ fn iterate_with_polars_get_row(df: &DataFrame) -> PolarsResult<()> {
     Ok(())
 }
 
-fn iterate_alltypes_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
+fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
     let col_bool_iter = df.column("_col_bool")?.bool()?.into_iter();
     let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.into_iter();
     let col_i32_iter = df.column("_col_i32")?.i32()?.into_iter();
@@ -330,7 +335,79 @@ fn iterate_alltypes_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult
     let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
     let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
 
-    todo!()
+    let row_iter = izip!(
+        col_bool_iter,
+        col_bool_opt_iter,
+        col_i32_iter,
+        col_i32_opt_iter,
+        col_u32_iter,
+        col_u32_opt_iter,
+        col_i64_iter,
+        col_i64_opt_iter,
+        col_u64_iter,
+        col_u64_opt_iter,
+        col_f32_iter,
+        col_f32_opt_iter,
+        col_f64_iter,
+        col_f64_opt_iter,
+        col_str_iter,
+        col_str_opt_iter,
+        col_cat_iter,
+        col_cat_opt_iter,
+    );
+
+    for (
+        col_bool_val,
+        col_bool_opt_val,
+        col_i32_val,
+        col_i32_opt_val,
+        col_u32_val,
+        col_u32_opt_val,
+        col_i64_val,
+        col_i64_opt_val,
+        col_u64_val,
+        col_u64_opt_val,
+        col_f32_val,
+        col_f32_opt_val,
+        col_f64_val,
+        col_f64_opt_val,
+        col_str_val,
+        col_str_opt_val,
+        col_cat_val,
+        col_cat_opt_val,
+    ) in row_iter
+    {
+        let col_bool_val: bool = col_bool_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_i32_val: i32 = col_i32_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_u32_val: u32 = col_u32_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_i64_val: i64 = col_i64_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_u64_val: u64 = col_u64_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_f32_val: f32 = col_f32_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_f64_val: f64 = col_f64_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_str_val: &str = col_str_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_cat_val: &str = col_cat_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+
+        black_box(col_bool_val);
+        black_box(col_bool_opt_val);
+        black_box(col_i32_val);
+        black_box(col_i32_opt_val);
+        black_box(col_u32_val);
+        black_box(col_u32_opt_val);
+        black_box(col_i64_val);
+        black_box(col_i64_opt_val);
+        black_box(col_u64_val);
+        black_box(col_u64_opt_val);
+        black_box(col_f32_val);
+        black_box(col_f32_opt_val);
+        black_box(col_f64_val);
+        black_box(col_f64_opt_val);
+        black_box(col_str_val);
+        black_box(col_str_opt_val);
+        black_box(col_cat_val);
+        black_box(col_cat_opt_val);
+    }
+
+    Ok(())
 }
 
 criterion_group!(benches, iteration_compare);
