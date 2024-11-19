@@ -74,8 +74,46 @@
 //! );
 //! ```
 //!
+//! ## Supported types
+//!
+//! |State|Rust Type|Supported Polars DataType|Feature Flag|
+//! |--|--|--|--|
+//! |✓|`bool`|`Boolean`
+//! |✓|`u8`|`UInt8`
+//! |✓|`u16`|`UInt16`
+//! |✓|`u32`|`UInt32`
+//! |✓|`u64`|`UInt64`
+//! |✓|`i8`|`Int8`
+//! |✓|`i16`|`Int16`
+//! |✓|`i32`|`Int32`
+//! |TODO|`i32`|`Date`
+//! |✓|`i64`|`Int64`
+//! |✓|`i64`|`Datetime(TimeUnit, Option<TimeZone>)`
+//! |TODO|`i64`|`Duration(TimeUnit)`
+//! |TODO|`i64`|`Time`
+//! |✓|`f32`|`Float32`
+//! |✓|`f64`|`Float64`
+//! |✓|`&str`|`String`
+//! |✓|`&str`|`Categorical(Option<Arc<RevMapping>>, CategoricalOrdering)`|`dtype-categorical`
+//! |TODO|`String`|`String`
+//! |TODO|?|`Binary`
+//! |TODO|?|`BinaryOffset`
+//! |?|?|`Decimal(Option<usize>, Option<usize>)`|`dtype-decimal`
+//! |?|?|`Array(Box<DataType>, usize)`|`dtype-array`
+//! |?|?|`List(Box<DataType>)`
+//! |?|?|`Object(&'static  str, Option<Arc<ObjectRegistry>>)`|`object`
+//! |?|?|`Enum(Option<Arc<RevMapping>>, CategoricalOrdering)`|`dtype-categorical`
+//! |?|?|`Struct(Vec<Field>)`|`dtype-struct`
+//! |X|X|`Null`
+//! |X|X|`Unknown(UnknownKind)`|
+//!
+//! TODO: Support is planned <br>
+//! ?: Support not yet certain<br>
+//! X: No Support
+//!
 //! ## Limitations
-//! Currently supports only primitive and string/categorical types
+//! * Currently supports only primitive and string/categorical types
+//! * No generics in row structs supported
 
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;

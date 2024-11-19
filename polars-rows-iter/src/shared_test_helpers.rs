@@ -117,15 +117,23 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             ),
             false => Column::new(name, create_values(height, || create_random_string(rng))),
         },
-        DataType::Categorical(_, ordering) => match optional {
+        DataType::Categorical(mapping, ordering) => match optional {
             true => Column::new(
                 name,
                 create_values(height, || create_optional(rng, create_random_string)),
             )
-            .cast(&DataType::Categorical(None, ordering))
+            .cast(&DataType::Categorical(mapping, ordering))
             .unwrap(),
             false => Column::new(name, create_values(height, || create_random_string(rng)))
-                .cast(&DataType::Categorical(None, ordering))
+                .cast(&DataType::Categorical(mapping, ordering))
+                .unwrap(),
+        },
+        DataType::Datetime(unit, zone) => match optional {
+            true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
+                .cast(&DataType::Datetime(unit, zone))
+                .unwrap(),
+            false => Column::new(name, create_values(height, || rng.gen::<i64>()))
+                .cast(&DataType::Datetime(unit, zone))
                 .unwrap(),
         },
         _ => todo!(),
@@ -140,4 +148,50 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
         .collect::<Vec<Column>>();
 
     DataFrame::new(columns).unwrap()
+}
+
+#[macro_export]
+macro_rules! create_test_for_type {
+    ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
+        #[test]
+        fn $func_name<'a>() {
+            let mut rng = StdRng::seed_from_u64(0);
+            let height = $height;
+            let dtype = $dtype;
+
+            let col = create_column("col", dtype.clone(), false, height, &mut rng);
+            let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+
+            let col_values = col
+                .$type_name()
+                .unwrap()
+                .into_iter()
+                .map(|v| v.unwrap())
+                .collect_vec();
+            let col_opt_values = col_opt.$type_name().unwrap().into_iter().collect_vec();
+
+            let df = DataFrame::new(vec![col, col_opt]).unwrap();
+
+            let col_iter = col_values.into_iter();
+            let col_opt_iter = col_opt_values.into_iter();
+
+            let expected_rows = izip!(col_iter, col_opt_iter)
+                .map(|(col, col_opt)| TestRow { col, col_opt })
+                .collect_vec();
+
+            #[derive(Debug, FromDataFrameRow, PartialEq)]
+            struct TestRow {
+                col: $type,
+                col_opt: Option<$type>,
+            }
+
+            let rows = df
+                .rows_iter::<TestRow>()
+                .unwrap()
+                .map(|v| v.unwrap())
+                .collect_vec();
+
+            assert_eq!(rows, expected_rows)
+        }
+    };
 }
