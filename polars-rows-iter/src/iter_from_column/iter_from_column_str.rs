@@ -9,6 +9,14 @@ impl<'a> IterFromColumn<'a, &'a str> for &'a str {
     ) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
         create_iter(dataframe, column_name)
     }
+
+    #[inline]
+    fn get_value(polars_value: Option<&'a str>, column_name: &'a str) -> PolarsResult<Self>
+    where
+        Self: Sized,
+    {
+        polars_value.ok_or_else(|| polars::prelude::polars_err!(SchemaMismatch: "Found unexpected None/null value in column {column_name} with mandatory values!"))
+    }
 }
 
 impl<'a> IterFromColumn<'a, &'a str> for Option<&'a str> {

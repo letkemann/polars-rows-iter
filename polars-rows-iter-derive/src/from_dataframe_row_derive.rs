@@ -254,13 +254,12 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
 
     let assignments = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
+        let field_type = remove_lifetime(field_info.inner_ty.clone());
         let column_name = &field_info.column_name;
-
-        let error_msg = format!("Found unexpected None/null value in column {column_name} with mandatory values!");
 
         match field_info.is_optional {
             true => quote! { #ident },
-            false => quote! { #ident: #ident.ok_or_else(||polars::prelude::polars_err!(SchemaMismatch: #error_msg))? },
+            false => quote! { #ident: <#field_type as IterFromColumn<#lifetime, #field_type>>::get_value(#ident, #column_name)? },
         }
     });
 

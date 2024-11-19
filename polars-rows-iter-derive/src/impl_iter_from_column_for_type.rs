@@ -9,6 +9,14 @@ pub fn create_impl_for(ident: syn::Ident) -> proc_macro::TokenStream {
             ) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = Option<#ident>> + 'a>> {
                 Ok(Box::new(dataframe.column(column_name)?.#ident()?.into_iter()))
             }
+
+            #[inline]
+            fn get_value(polars_value: Option<#ident>, column_name: &'a str) -> polars::prelude::PolarsResult<Self>
+            where
+                Self: Sized,
+            {
+                polars_value.ok_or_else(|| polars::prelude::polars_err!(SchemaMismatch: "Found unexpected None/null value in column {column_name} with mandatory values!"))
+            }
         }
 
         impl<'a> IterFromColumn<'a, #ident> for Option<#ident> {
