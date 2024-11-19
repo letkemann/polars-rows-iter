@@ -1,17 +1,19 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    punctuated::Punctuated, DeriveInput, Field, GenericParam, Generics, Ident, Lifetime, LifetimeParam, Token, Type,
-    TypeReference,
+    punctuated::Punctuated, DeriveInput, Field, GenericArgument, GenericParam, Generics, Ident, Lifetime,
+    LifetimeParam, PathArguments, Token, Type, TypeReference,
 };
 
 const ROW_ITERATOR_NAME: &'static str = "RowsIterator";
 
+#[derive(Debug)]
 struct FieldInfo {
     pub name: String,
     pub ident: Ident,
     pub iter_ident: Ident,
-    pub ty: Type,
+    pub inner_ty: Type,
+    pub is_optional: bool,
     pub column_name: String,
 }
 
@@ -121,7 +123,8 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
     let iter_create_list = ctx.fields_list.iter().map(|f| {
         let iter_ident = &f.iter_ident;
         let column_name = f.column_name.as_str();
-        quote! { let #iter_ident = IterFromColumn::create_iter(dataframe, #column_name)? }
+        let field_type = remove_lifetime(f.inner_ty.clone());
+        quote! { let #iter_ident = <#field_type as IterFromColumn<#lifetime, #field_type>>::create_iter(dataframe, #column_name)? }
     });
 
     let struct_ident = &ctx.struct_ident;
@@ -172,20 +175,53 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
         _ => panic!("Field '{name}' can have only one column name"),
     };
 
-    FieldInfo {
+    let mut is_optional = false;
+    let inner_ty = get_inner_type_from_options(ty.clone(), &mut is_optional);
+
+    let field_info = FieldInfo {
         name,
         ident,
         iter_ident,
-        ty,
+        inner_ty,
+        is_optional,
         column_name,
+    };
+
+    // println!("{field_info:?}");
+
+    field_info
+}
+
+fn try_get_inner_option_type(ty: &Type) -> Option<Type> {
+    if let Type::Path(type_path) = ty {
+        let segment = type_path.path.segments.first().unwrap();
+        if segment.ident == "Option" {
+            if let PathArguments::AngleBracketed(gen) = &segment.arguments {
+                let gen_args = gen.args.first().unwrap();
+                if let GenericArgument::Type(inner_type) = gen_args {
+                    return Some(inner_type.clone());
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn get_inner_type_from_options(ty: Type, is_optional: &mut bool) -> Type {
+    if let Some(inner) = try_get_inner_option_type(&ty) {
+        *is_optional = true;
+        get_inner_type_from_options(inner, is_optional)
+    } else {
+        ty
     }
 }
 
 fn create_iterator_struct_field(field_info: &FieldInfo, lifetime: &LifetimeParam) -> proc_macro2::TokenStream {
     let ident = &field_info.iter_ident;
-    let ty = coerce_lifetime(field_info.ty.clone(), lifetime);
+    let ty = coerce_lifetime(field_info.inner_ty.clone(), lifetime);
     quote! {
-        #ident : Box<dyn Iterator<Item = polars::prelude::PolarsResult<#ty>> + #lifetime>
+        #ident : Box<dyn Iterator<Item = Option<#ty>> + #lifetime>
     }
 }
 
@@ -212,13 +248,20 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
 
     let fn_params = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
-        let ty = coerce_lifetime(field_info.ty.clone(), &lifetime);
-        quote! { #ident: polars::prelude::PolarsResult<#ty> }
+        let ty = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
+        quote! { #ident: Option<#ty> }
     });
 
     let assignments = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
-        quote! { #ident: #ident? }
+        let column_name = &field_info.column_name;
+
+        let error_msg = format!("Found unexpected None/null value in column {column_name} with mandatory values!");
+
+        match field_info.is_optional {
+            true => quote! { #ident },
+            false => quote! { #ident: #ident.ok_or_else(||polars::prelude::polars_err!(SchemaMismatch: #error_msg))? },
+        }
     });
 
     let struct_ident = &ctx.struct_ident;
@@ -249,6 +292,16 @@ fn coerce_lifetime(ty: Type, lifetime: &LifetimeParam) -> Type {
     match ty {
         Type::Reference(type_reference) => Type::Reference(TypeReference {
             lifetime: type_reference.lifetime.map(|_| lifetime.lifetime.clone()),
+            ..type_reference
+        }),
+        t => t,
+    }
+}
+
+fn remove_lifetime(ty: Type) -> Type {
+    match ty {
+        Type::Reference(type_reference) => Type::Reference(TypeReference {
+            lifetime: None,
             ..type_reference
         }),
         t => t,
