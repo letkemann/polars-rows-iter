@@ -1,4 +1,5 @@
 mod iter_from_column;
+mod iter_from_column_binary;
 #[cfg(feature = "chrono")]
 mod iter_from_column_chrono;
 mod iter_from_column_i32;
