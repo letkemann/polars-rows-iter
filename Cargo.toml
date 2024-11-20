@@ -2,12 +2,21 @@
 resolver = "2"
 members = ["polars-rows-iter", "polars-rows-iter-derive"]
 
+[workspace.package]
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/letkemann/polars-rows-iter"
+description = "Library for easy and convenient row iteration of polars dataframes"
+keywords = ["polars", "dataframe", "row", "rows", "iter", "iterator"]
+
 [workspace.dependencies]
 polars = "0.44.2"
 chrono = "0.4.38"
-
-[workspace.package]
-version = "0.3.0"
-edition = "2021"
-license = "MIT"
-repository = "https://github.com/letkemann/polars-row-iter"
+criterion = "0.5.1"
+rand = "0.8.5"
+itertools = "0.13.0"
+proc-macro2 = "1.0.89"
+quote = "1.0.37"
+syn = "2.0.87"
+deluxe = "0.5.0"

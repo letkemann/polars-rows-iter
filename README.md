@@ -1,15 +1,17 @@
 # polars-rows-iter
 
-This is a **very early state** library for simple and convenient row iteration of polars dataframes.<br>
+This is a **early state** library for simple and convenient row iteration of polars dataframes.<br>
 Currently are only primitive and string types supported.
 
 Todos:
-* Unit-Tests
-* Documentation 
-* DType: DateTime support
-* DType: Date support
+
+- Unit-Tests
+- Documentation
+- DType: Date support
+- DType: Binary Support
 
 ### Example:
+
 ```rust
 use polars::prelude::*;
 use polars_rows_iter::*;

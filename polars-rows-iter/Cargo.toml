@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Library for easy and convenient row iteration of polars dataframes"
-keywords = ["polars", "row", "rows", "iter", "iterator"]
+description.workspace = true
+keywords.workspace = true
 
 [dependencies]
 polars.workspace = true
@@ -14,9 +14,9 @@ polars-rows-iter-derive = { path = "../polars-rows-iter-derive" }
 
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
-criterion = "0.5.1"
-rand = "0.8.5"
-itertools = "0.13.0"
+criterion.workspace = true
+rand.workspace = true
+itertools.workspace = true
 
 [features]
 default = []
