@@ -174,22 +174,14 @@ struct OptionalTypesRow<'a> {
 }
 
 fn get_dataframe_heights_to_benchmark() -> Vec<usize> {
-    vec![
-        1usize,
-        10usize,
-        100usize,
-        1_000usize,
-        10_000usize,
-        100_000usize,
-        1_000_000usize,
-    ]
+    vec![1usize, 10usize, 100usize, 1_000usize, 10_000usize]
 }
 
 fn add_all_column_types_group(c: &mut Criterion) {
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     let mut group = c.benchmark_group("all_types");
     group.plot_config(plot_config);
-    group.measurement_time(Duration::from_secs(10));
+    group.measurement_time(Duration::from_secs(8));
 
     for height in get_dataframe_heights_to_benchmark() {
         let dataframe = create_all_column_types_dataframe(height);

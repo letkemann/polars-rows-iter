@@ -4,6 +4,7 @@ members = ["polars-rows-iter", "polars-rows-iter-derive"]
 
 [workspace.dependencies]
 polars = "0.44.2"
+chrono = "0.4.38"
 
 [workspace.package]
 version = "0.3.0"

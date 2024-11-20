@@ -5,7 +5,7 @@ use polars_rows_iter_derive::iter_from_column_for_type;
 iter_from_column_for_type!(bool);
 iter_from_column_for_type!(i8);
 iter_from_column_for_type!(i16);
-iter_from_column_for_type!(i32);
+// i32 has specific definition
 // i64 has specific definition
 iter_from_column_for_type!(u8);
 iter_from_column_for_type!(u16);

@@ -86,26 +86,28 @@
 //! |✓|`i8`|`Int8`
 //! |✓|`i16`|`Int16`
 //! |✓|`i32`|`Int32`
-//! |TODO|`i32`|`Date`
+//! |✓|`i32`|`Date`
 //! |✓|`i64`|`Int64`
-//! |✓|`i64`|`Datetime(TimeUnit, Option<TimeZone>)`
-//! |TODO|`i64`|`Duration(TimeUnit)`
-//! |TODO|`i64`|`Time`
+//! |✓|`i64`|`Datetime(..)`
+//! |✓|`i64`|`Duration(..)`
+//! |✓|`i64`|`Time`
 //! |✓|`f32`|`Float32`
 //! |✓|`f64`|`Float64`
 //! |✓|`&str`|`String`
-//! |✓|`&str`|`Categorical(Option<Arc<RevMapping>>, CategoricalOrdering)`|`dtype-categorical`
-//! |TODO|`String`|`String`
+//! |✓|`&str`|`Categorical(..)`|`dtype-categorical`
 //! |TODO|?|`Binary`
 //! |TODO|?|`BinaryOffset`
-//! |?|?|`Decimal(Option<usize>, Option<usize>)`|`dtype-decimal`
-//! |?|?|`Array(Box<DataType>, usize)`|`dtype-array`
-//! |?|?|`List(Box<DataType>)`
-//! |?|?|`Object(&'static  str, Option<Arc<ObjectRegistry>>)`|`object`
-//! |?|?|`Enum(Option<Arc<RevMapping>>, CategoricalOrdering)`|`dtype-categorical`
-//! |?|?|`Struct(Vec<Field>)`|`dtype-struct`
+//! |✓|`chrono::NaiveDateTime`|`Datetime(..)`|`chrono`
+//! |✓|`chrono::DateTime<Utc>`|`Datetime(..)`|`chrono`
+//! |✓|`chrono::Date`|`Date`|`chrono`|
+//! |?|?|`List(..)`
+//! |?|?|`Array(..)`|`dtype-array`
+//! |?|?|`Enum(..)`|`dtype-categorical`
+//! |?|?|`Decimal(..)`|`dtype-decimal`
+//! |?|?|`Struct(..)`|`dtype-struct`
 //! |X|X|`Null`
-//! |X|X|`Unknown(UnknownKind)`|
+//! |X|X|`Unknown(..)`|
+//! |X|X|`Object(..)`|`object`
 //!
 //! TODO: Support is planned <br>
 //! ?: Support not yet certain<br>

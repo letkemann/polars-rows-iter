@@ -16,7 +16,7 @@ struct DataRow1 {
 }
 
 #[test]
-fn test() {
+fn sandbox() {
     let df = df!(
         "col_x" => [1i32, 2, 3, 4],
         "col_y" => ["a", "b", "c", "d"]

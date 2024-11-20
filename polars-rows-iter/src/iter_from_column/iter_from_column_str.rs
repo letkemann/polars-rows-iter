@@ -2,29 +2,33 @@ use super::*;
 use iter_from_column::IterFromColumn;
 use polars::prelude::*;
 
-impl<'a> IterFromColumn<'a, &'a str> for &'a str {
-    fn create_iter(
-        dataframe: &'a DataFrame,
-        column_name: &'a str,
-    ) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-        create_iter(dataframe, column_name)
+impl<'a> IterFromColumn<'a> for &'a str {
+    type RawInner = &'a str;
+    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
+        create_iter(column)
     }
 
     #[inline]
-    fn get_value(polars_value: Option<&'a str>, column_name: &'a str) -> PolarsResult<Self>
+    fn get_value(polars_value: Option<&'a str>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
     where
         Self: Sized,
     {
-        polars_value.ok_or_else(|| polars::prelude::polars_err!(SchemaMismatch: "Found unexpected None/null value in column {column_name} with mandatory values!"))
+        polars_value.ok_or_else(|| <&'a str as IterFromColumn<'a>>::unexpected_null_value_error(column_name))
     }
 }
 
-impl<'a> IterFromColumn<'a, &'a str> for Option<&'a str> {
-    fn create_iter(
-        dataframe: &'a DataFrame,
-        column_name: &'a str,
-    ) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-        create_iter(dataframe, column_name)
+impl<'a> IterFromColumn<'a> for Option<&'a str> {
+    type RawInner = &'a str;
+    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
+        create_iter(column)
+    }
+
+    #[inline]
+    fn get_value(polars_value: Option<&'a str>, _column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(polars_value)
     }
 }
 
@@ -65,18 +69,16 @@ fn create_cat_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item
     Ok(Box::new(CategoricalIteratorWrapper { inner }))
 }
 
-fn create_iter<'a>(
-    dataframe: &'a DataFrame,
-    column_name: &'a str,
-) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    let column = dataframe.column(column_name)?;
-
+fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
     let iter = match column.dtype() {
         DataType::String => create_str_iter(column)?,
         #[cfg(feature = "dtype-categorical")]
         DataType::Categorical(_, _) => create_cat_iter(column)?,
         dtype => {
-            return Err(polars_err!(SchemaMismatch: "Cannot get &str from column '{column_name}' with dtype : {dtype}"))
+            let column_name = column.name().as_str();
+            return Err(
+                polars_err!(SchemaMismatch: "Cannot get &str from column '{column_name}' with dtype : {dtype}"),
+            );
         }
     };
 
@@ -138,6 +140,7 @@ mod tests {
         assert_eq!(rows, expected_rows)
     }
 
+    #[cfg(feature = "dtype-categorical")]
     #[test]
     fn cat_test() {
         let mut rng = StdRng::seed_from_u64(0);

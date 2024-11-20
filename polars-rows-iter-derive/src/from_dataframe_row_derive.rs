@@ -11,6 +11,7 @@ const ROW_ITERATOR_NAME: &'static str = "RowsIterator";
 struct FieldInfo {
     pub name: String,
     pub ident: Ident,
+    pub dtype_ident: Ident,
     pub iter_ident: Ident,
     pub inner_ty: Type,
     pub is_optional: bool,
@@ -121,15 +122,24 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
     let impl_generics = create_impl_generics(generics, &lifetime);
 
     let iter_create_list = ctx.fields_list.iter().map(|f| {
-        let iter_ident = &f.iter_ident;
+        let ident_iter = &f.iter_ident;
+        let ident_dtype = &f.dtype_ident;
         let column_name = f.column_name.as_str();
         let field_type = remove_lifetime(f.inner_ty.clone());
-        quote! { let #iter_ident = <#field_type as IterFromColumn<#lifetime, #field_type>>::create_iter(dataframe, #column_name)? }
+        quote! {
+            let column = dataframe.column(#column_name)?;
+            let #ident_iter = <#field_type as IterFromColumn<#lifetime>>::create_iter(&column)?;
+            let #ident_dtype = column.dtype().clone();
+        }
     });
 
     let struct_ident = &ctx.struct_ident;
     let iter_struct_ident = &ctx.iter_struct_ident;
-    let iter_ident_list = ctx.fields_list.iter().map(|f| &f.iter_ident);
+    let iter_ident_list = ctx.fields_list.iter().map(|f| {
+        let ident_iter = &f.iter_ident;
+        let ident_dtype = &f.dtype_ident;
+        quote! { #ident_iter, #ident_dtype }
+    });
 
     let struct_ident = match ctx.has_lifetime {
         true => quote! { #struct_ident<#lifetime> },
@@ -148,7 +158,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
                 where
                     Self: Sized
             {
-                #(#iter_create_list;)*
+                #(#iter_create_list)*
 
                 Ok(Box::new(#iter_struct_ident { #(#iter_ident_list,)* }))
             }
@@ -165,6 +175,7 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
     let name = ident.to_string();
 
     let iter_ident = Ident::new(format!("{name}_iter").as_str(), Span::call_site());
+    let dtype_ident = Ident::new(format!("{name}_dtype").as_str(), Span::call_site());
     let ty = field.ty.clone();
 
     let attrs: ColumnFieldAttributes = deluxe::extract_attributes(&mut field).unwrap();
@@ -182,6 +193,7 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
         name,
         ident,
         iter_ident,
+        dtype_ident,
         inner_ty,
         is_optional,
         column_name,
@@ -219,9 +231,11 @@ fn get_inner_type_from_options(ty: Type, is_optional: &mut bool) -> Type {
 
 fn create_iterator_struct_field(field_info: &FieldInfo, lifetime: &LifetimeParam) -> proc_macro2::TokenStream {
     let ident = &field_info.iter_ident;
+    let dtype_ident = &field_info.dtype_ident;
     let ty = coerce_lifetime(field_info.inner_ty.clone(), lifetime);
     quote! {
-        #ident : Box<dyn Iterator<Item = Option<#ty>> + #lifetime>
+        #ident : Box<dyn Iterator<Item = Option<<#ty as IterFromColumn<#lifetime>>::RawInner>> + #lifetime>,
+        #dtype_ident: polars::prelude::DataType,
     }
 }
 
@@ -238,7 +252,7 @@ fn create_iterator_struct(ctx: &Context) -> proc_macro2::TokenStream {
     quote! {
         #[automatically_derived]
         struct #iter_struct_ident <#lifetime> {
-            #(#fields, )*
+            #(#fields)*
         }
     }
 }
@@ -248,18 +262,19 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
 
     let fn_params = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
-        let ty = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
-        quote! { #ident: Option<#ty> }
+        let field_type = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
+        quote! { #ident: Option<<#field_type as IterFromColumn<#lifetime>>::RawInner> }
     });
 
     let assignments = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
-        let field_type = remove_lifetime(field_info.inner_ty.clone());
+        let ident_dtype = &field_info.dtype_ident;
+        let field_type = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
         let column_name = &field_info.column_name;
 
         match field_info.is_optional {
-            true => quote! { #ident },
-            false => quote! { #ident: <#field_type as IterFromColumn<#lifetime, #field_type>>::get_value(#ident, #column_name)? },
+            true => quote! { #ident: <Option<#field_type> as IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
+            false => quote! { #ident: <#field_type as IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
         }
     });
 
@@ -275,6 +290,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
         #[automatically_derived]
         impl<#lifetime> #iter_struct_ident <#lifetime> {
             fn create(
+                &self,
                 #(#fn_params,)*
             ) -> polars::prelude::PolarsResult<#struct_ident_with_lifetime_if_nec> {
 
@@ -345,7 +361,7 @@ fn create_iterator_impl_for_iterator_struct(ctx: &Context) -> proc_macro2::Token
             fn next(&mut self) -> Option<Self::Item> {
                 #(#next_value_list;)*
 
-                Some(Self::create(#(#value_ident_list,)*))
+                Some(self.create(#(#value_ident_list,)*))
             }
         }
     }

@@ -9,18 +9,20 @@ keywords = ["polars", "row", "rows", "iter", "iterator"]
 
 [dependencies]
 polars.workspace = true
+chrono = { workspace = true, optional = true }
 polars-rows-iter-derive = { path = "../polars-rows-iter-derive" }
 
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
 criterion = "0.5.1"
 rand = "0.8.5"
-chrono = "0.4.38"
 itertools = "0.13.0"
 
 [features]
 default = []
 dtype-categorical = ["polars/dtype-categorical"]
+dtype-time = ["polars/dtype-time"]
+chrono = ["dep:chrono"]
 
 [[bench]]
 name = "benchmark"

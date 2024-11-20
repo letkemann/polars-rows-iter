@@ -9,6 +9,8 @@ use rand::{
 
 pub type IsOptional = bool;
 
+const TIME64_MAX_VALUE: i64 = 24 * 60 * 60 * 1_000_000_000;
+
 #[derive(Debug, Clone)]
 pub struct ColumnType(pub DataType, pub IsOptional);
 
@@ -136,6 +138,44 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 .cast(&DataType::Datetime(unit, zone))
                 .unwrap(),
         },
+        DataType::Date => match optional {
+            true => Column::new(name, create_values(height, || create_optional_number::<i32>(rng)))
+                .cast(&DataType::Date)
+                .unwrap(),
+            false => Column::new(name, create_values(height, || rng.gen::<i32>()))
+                .cast(&DataType::Date)
+                .unwrap(),
+        },
+        DataType::Time => match optional {
+            true => Column::new(
+                name,
+                create_values(height, || {
+                    create_optional(rng, |rng| {
+                        let value: i64 = rng.gen_range(0..TIME64_MAX_VALUE);
+                        value
+                    })
+                }),
+            )
+            .cast(&DataType::Time)
+            .unwrap(),
+            false => Column::new(
+                name,
+                create_values(height, || {
+                    let value: i64 = rng.gen_range(0..TIME64_MAX_VALUE);
+                    value
+                }),
+            )
+            .cast(&DataType::Time)
+            .unwrap(),
+        },
+        DataType::Duration(unit) => match optional {
+            true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
+                .cast(&DataType::Duration(unit))
+                .unwrap(),
+            false => Column::new(name, create_values(height, || rng.gen::<i64>()))
+                .cast(&DataType::Duration(unit))
+                .unwrap(),
+        },
         _ => todo!(),
     }
 }
@@ -163,12 +203,21 @@ macro_rules! create_test_for_type {
             let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
             let col_values = col
+                .as_series()
+                .unwrap()
                 .$type_name()
                 .unwrap()
                 .into_iter()
                 .map(|v| v.unwrap())
                 .collect_vec();
-            let col_opt_values = col_opt.$type_name().unwrap().into_iter().collect_vec();
+
+            let col_opt_values = col_opt
+                .as_series()
+                .unwrap()
+                .$type_name()
+                .unwrap()
+                .into_iter()
+                .collect_vec();
 
             let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
