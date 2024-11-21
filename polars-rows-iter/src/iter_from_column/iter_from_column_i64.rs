@@ -34,10 +34,10 @@ impl<'a> IterFromColumn<'a> for Option<i64> {
 fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i64>> + 'a>> {
     let column_name = column.name().as_str();
     let iter = match column.dtype() {
-        DataType::Int64 => Box::new(column.i64()?.into_iter()),
-        DataType::Time => Box::new(column.as_materialized_series().time()?.into_iter()),
-        DataType::Datetime(_, _) => Box::new(column.datetime()?.into_iter()),
-        DataType::Duration(_) => Box::new(column.duration()?.into_iter()),
+        DataType::Int64 => Box::new(column.i64()?.iter()),
+        DataType::Time => Box::new(column.as_materialized_series().time()?.iter()),
+        DataType::Datetime(_, _) => Box::new(column.datetime()?.iter()),
+        DataType::Duration(_) => Box::new(column.duration()?.iter()),
         dtype => {
             return Err(polars_err!(SchemaMismatch: "Cannot get i64 from column '{column_name}' with dtype : {dtype}"))
         }

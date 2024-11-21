@@ -34,8 +34,8 @@ impl<'a> IterFromColumn<'a> for Option<i32> {
 fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i32>> + 'a>> {
     let column_name = column.name().as_str();
     let iter = match column.dtype() {
-        DataType::Int32 => Box::new(column.i32()?.into_iter()),
-        DataType::Date => Box::new(column.date()?.into_iter()),
+        DataType::Int32 => Box::new(column.i32()?.iter()),
+        DataType::Date => Box::new(column.date()?.iter()),
         dtype => {
             return Err(polars_err!(SchemaMismatch: "Cannot get i32 from column '{column_name}' with dtype : {dtype}"))
         }
@@ -73,19 +73,19 @@ mod tests {
             .unwrap()
             .time()
             .unwrap()
-            .into_iter()
+            .iter()
             .map(|v| v.unwrap())
             .collect_vec();
 
-        let col_opt_values = col_opt.as_series().unwrap().time().unwrap().into_iter().collect_vec();
+        let col_opt_values = col_opt.as_series().unwrap().time().unwrap().iter().collect_vec();
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.into_iter();
-        let col_opt_iter = col_opt_values.into_iter();
+        let col_iter = col_values.iter();
+        let col_opt_iter = col_opt_values.iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow { col, col_opt })
+            .map(|(&col, &col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]

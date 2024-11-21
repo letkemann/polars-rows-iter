@@ -326,26 +326,26 @@ fn iterate_with_polars_get_row(df: &DataFrame) -> PolarsResult<()> {
 }
 
 fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
-    let col_bool_iter = df.column("_col_bool")?.bool()?.into_iter();
-    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.into_iter();
-    let col_i32_iter = df.column("_col_i32")?.i32()?.into_iter();
-    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.into_iter();
-    let col_u32_iter = df.column("_col_u32")?.u32()?.into_iter();
-    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.into_iter();
-    let col_i64_iter = df.column("_col_i64")?.i64()?.into_iter();
-    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.into_iter();
-    let col_u64_iter = df.column("_col_u64")?.u64()?.into_iter();
-    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.into_iter();
-    let col_f32_iter = df.column("_col_f32")?.f32()?.into_iter();
-    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.into_iter();
-    let col_f64_iter = df.column("_col_f64")?.f64()?.into_iter();
-    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.into_iter();
-    let col_str_iter = df.column("_col_str")?.str()?.into_iter();
-    let col_str_opt_iter = df.column("_col_str_opt")?.str()?.into_iter();
+    let col_bool_iter = df.column("_col_bool")?.bool()?.iter();
+    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.iter();
+    let col_i32_iter = df.column("_col_i32")?.i32()?.iter();
+    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.iter();
+    let col_u32_iter = df.column("_col_u32")?.u32()?.iter();
+    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.iter();
+    let col_i64_iter = df.column("_col_i64")?.i64()?.iter();
+    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.iter();
+    let col_u64_iter = df.column("_col_u64")?.u64()?.iter();
+    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.iter();
+    let col_f32_iter = df.column("_col_f32")?.f32()?.iter();
+    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.iter();
+    let col_f64_iter = df.column("_col_f64")?.f64()?.iter();
+    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.iter();
+    let col_str_iter = df.column("_col_str")?.str()?.iter();
+    let col_str_opt_iter = df.column("_col_str_opt")?.str()?.iter();
     let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
     let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
-    let col_bin_iter = df.column("_col_bin")?.binary()?.into_iter();
-    let col_bin_opt_iter = df.column("_col_bin_opt")?.binary()?.into_iter();
+    let col_bin_iter = df.column("_col_bin")?.binary()?.iter();
+    let col_bin_opt_iter = df.column("_col_bin_opt")?.binary()?.iter();
 
     let row_iter = izip!(
         col_bool_iter,
@@ -430,20 +430,20 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
 }
 
 fn iterate_primitive_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
-    let col_bool_iter = df.column("_col_bool")?.bool()?.into_iter();
-    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.into_iter();
-    let col_i32_iter = df.column("_col_i32")?.i32()?.into_iter();
-    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.into_iter();
-    let col_u32_iter = df.column("_col_u32")?.u32()?.into_iter();
-    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.into_iter();
-    let col_i64_iter = df.column("_col_i64")?.i64()?.into_iter();
-    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.into_iter();
-    let col_u64_iter = df.column("_col_u64")?.u64()?.into_iter();
-    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.into_iter();
-    let col_f32_iter = df.column("_col_f32")?.f32()?.into_iter();
-    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.into_iter();
-    let col_f64_iter = df.column("_col_f64")?.f64()?.into_iter();
-    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.into_iter();
+    let col_bool_iter = df.column("_col_bool")?.bool()?.iter();
+    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.iter();
+    let col_i32_iter = df.column("_col_i32")?.i32()?.iter();
+    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.iter();
+    let col_u32_iter = df.column("_col_u32")?.u32()?.iter();
+    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.iter();
+    let col_i64_iter = df.column("_col_i64")?.i64()?.iter();
+    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.iter();
+    let col_u64_iter = df.column("_col_u64")?.u64()?.iter();
+    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.iter();
+    let col_f32_iter = df.column("_col_f32")?.f32()?.iter();
+    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.iter();
+    let col_f64_iter = df.column("_col_f64")?.f64()?.iter();
+    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.iter();
 
     let row_iter = izip!(
         col_bool_iter,
@@ -507,14 +507,14 @@ fn iterate_primitive_types_with_zipped_column_iterators(df: &DataFrame) -> Polar
 }
 
 fn iterate_mandatory_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
-    let col_bool_iter = df.column("_col_bool")?.bool()?.into_iter();
-    let col_i32_iter = df.column("_col_i32")?.i32()?.into_iter();
-    let col_u32_iter = df.column("_col_u32")?.u32()?.into_iter();
-    let col_i64_iter = df.column("_col_i64")?.i64()?.into_iter();
-    let col_u64_iter = df.column("_col_u64")?.u64()?.into_iter();
-    let col_f32_iter = df.column("_col_f32")?.f32()?.into_iter();
-    let col_f64_iter = df.column("_col_f64")?.f64()?.into_iter();
-    let col_str_iter = df.column("_col_str")?.str()?.into_iter();
+    let col_bool_iter = df.column("_col_bool")?.bool()?.iter();
+    let col_i32_iter = df.column("_col_i32")?.i32()?.iter();
+    let col_u32_iter = df.column("_col_u32")?.u32()?.iter();
+    let col_i64_iter = df.column("_col_i64")?.i64()?.iter();
+    let col_u64_iter = df.column("_col_u64")?.u64()?.iter();
+    let col_f32_iter = df.column("_col_f32")?.f32()?.iter();
+    let col_f64_iter = df.column("_col_f64")?.f64()?.iter();
+    let col_str_iter = df.column("_col_str")?.str()?.iter();
     let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
 
     let row_iter = izip!(
@@ -566,14 +566,14 @@ fn iterate_mandatory_types_with_zipped_column_iterators(df: &DataFrame) -> Polar
 }
 
 fn iterate_optional_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResult<()> {
-    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.into_iter();
-    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.into_iter();
-    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.into_iter();
-    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.into_iter();
-    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.into_iter();
-    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.into_iter();
-    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.into_iter();
-    let col_str_opt_iter = df.column("_col_str_opt")?.str()?.into_iter();
+    let col_bool_opt_iter = df.column("_col_bool_opt")?.bool()?.iter();
+    let col_i32_opt_iter = df.column("_col_i32_opt")?.i32()?.iter();
+    let col_u32_opt_iter = df.column("_col_u32_opt")?.u32()?.iter();
+    let col_i64_opt_iter = df.column("_col_i64_opt")?.i64()?.iter();
+    let col_u64_opt_iter = df.column("_col_u64_opt")?.u64()?.iter();
+    let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.iter();
+    let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.iter();
+    let col_str_opt_iter = df.column("_col_str_opt")?.str()?.iter();
     let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
 
     let row_iter = izip!(

@@ -33,9 +33,9 @@ impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
 
 fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a [u8]>> + 'a>> {
     let column_name = column.name().as_str();
-    let iter = match column.dtype() {
-        DataType::Binary => column.binary()?.into_iter(),
-        DataType::BinaryOffset => column.binary_offset()?.into_iter(),
+    let iter: Box<dyn Iterator<Item = Option<&[u8]>>> = match column.dtype() {
+        DataType::Binary => Box::new(column.binary()?.iter()),
+        DataType::BinaryOffset => Box::new(column.binary_offset()?.iter()),
         dtype => {
             return Err(
                 polars_err!(SchemaMismatch: "Cannot get &[u8] from column '{column_name}' with dtype : {dtype}"),
@@ -43,7 +43,7 @@ fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = O
         }
     };
 
-    Ok(Box::new(iter))
+    Ok(iter)
 }
 
 #[cfg(test)]
@@ -65,23 +65,18 @@ mod tests {
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
         let col_values = col.clone();
-        let col_values = col_values
-            .binary()
-            .unwrap()
-            .into_iter()
-            .map(|v| v.unwrap())
-            .collect_vec();
+        let col_values = col_values.binary().unwrap().iter().map(|v| v.unwrap()).collect_vec();
 
         let col_opt_values = col_opt.clone();
-        let col_opt_values = col_opt_values.binary().unwrap().into_iter().collect_vec();
+        let col_opt_values = col_opt_values.binary().unwrap().iter().collect_vec();
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.into_iter();
-        let col_opt_iter = col_opt_values.into_iter();
+        let col_iter = col_values.iter();
+        let col_opt_iter = col_opt_values.iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow { col, col_opt })
+            .map(|(&col, &col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]
@@ -108,20 +103,20 @@ mod tests {
         let col_values = col_values
             .binary_offset()
             .unwrap()
-            .into_iter()
+            .iter()
             .map(|v| v.unwrap())
             .collect_vec();
 
         let col_opt_values = col_opt.clone();
-        let col_opt_values = col_opt_values.binary_offset().unwrap().into_iter().collect_vec();
+        let col_opt_values = col_opt_values.binary_offset().unwrap().iter().collect_vec();
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.into_iter();
-        let col_opt_iter = col_opt_values.into_iter();
+        let col_iter = col_values.iter();
+        let col_opt_iter = col_opt_values.iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow { col, col_opt })
+            .map(|(&col, &col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]

@@ -32,41 +32,15 @@ impl<'a> IterFromColumn<'a> for Option<&'a str> {
     }
 }
 
-struct PolarsIteratorStrWrapper<'a> {
-    inner: Box<dyn PolarsIterator<Item = Option<&'a str>> + 'a>,
-}
-
-impl<'a> Iterator for PolarsIteratorStrWrapper<'a> {
-    type Item = Option<&'a str>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
 fn create_str_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    let inner = column.str()?.into_iter();
-    Ok(Box::new(PolarsIteratorStrWrapper { inner }))
-}
-
-#[cfg(feature = "dtype-categorical")]
-struct CategoricalIteratorWrapper<'a> {
-    inner: CatIter<'a>,
-}
-
-#[cfg(feature = "dtype-categorical")]
-impl<'a> Iterator for CategoricalIteratorWrapper<'a> {
-    type Item = Option<&'a str>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
+    let inner = column.str()?.iter();
+    Ok(Box::new(inner))
 }
 
 #[cfg(feature = "dtype-categorical")]
 fn create_cat_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
     let inner = column.categorical()?.iter_str();
-    Ok(Box::new(CategoricalIteratorWrapper { inner }))
+    Ok(Box::new(inner))
 }
 
 fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
@@ -104,16 +78,11 @@ mod tests {
         let col = create_column("col", dtype.clone(), false, height, &mut rng);
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
-        let col_values = col
-            .str()
-            .unwrap()
-            .into_iter()
-            .map(|v| v.unwrap().to_owned())
-            .collect_vec();
+        let col_values = col.str().unwrap().iter().map(|v| v.unwrap().to_owned()).collect_vec();
         let col_opt_values = col_opt
             .str()
             .unwrap()
-            .into_iter()
+            .iter()
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 

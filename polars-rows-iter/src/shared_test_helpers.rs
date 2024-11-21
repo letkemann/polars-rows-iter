@@ -236,7 +236,7 @@ macro_rules! create_test_for_type {
                 .unwrap()
                 .$type_name()
                 .unwrap()
-                .into_iter()
+                .iter()
                 .map(|v| v.unwrap())
                 .collect_vec();
 
@@ -245,16 +245,16 @@ macro_rules! create_test_for_type {
                 .unwrap()
                 .$type_name()
                 .unwrap()
-                .into_iter()
+                .iter()
                 .collect_vec();
 
             let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-            let col_iter = col_values.into_iter();
-            let col_opt_iter = col_opt_values.into_iter();
+            let col_iter = col_values.iter();
+            let col_opt_iter = col_opt_values.iter();
 
             let expected_rows = izip!(col_iter, col_opt_iter)
-                .map(|(col, col_opt)| TestRow { col, col_opt })
+                .map(|(&col, &col_opt)| TestRow { col, col_opt })
                 .collect_vec();
 
             #[derive(Debug, FromDataFrameRow, PartialEq)]

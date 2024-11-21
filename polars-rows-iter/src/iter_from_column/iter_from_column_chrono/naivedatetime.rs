@@ -42,7 +42,7 @@ impl<'a> IterFromColumn<'a> for Option<NaiveDateTime> {
 }
 
 fn create_datetime_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i64>> + 'a>> {
-    let iter = column.datetime()?.into_iter();
+    let iter = column.datetime()?.iter();
     Ok(Box::new(iter))
 }
 
