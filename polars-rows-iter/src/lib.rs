@@ -95,8 +95,8 @@
 //! |✓|`f64`|`Float64`
 //! |✓|`&str`|`String`
 //! |✓|`&str`|`Categorical(..)`|`dtype-categorical`
-//! |TODO|?|`Binary`
-//! |TODO|?|`BinaryOffset`
+//! |✓|`&[u8]`|`Binary`
+//! |✓|`&[u8]`|`BinaryOffset`
 //! |✓|`chrono::NaiveDateTime`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::DateTime<Utc>`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::Date`|`Date`|`chrono`|

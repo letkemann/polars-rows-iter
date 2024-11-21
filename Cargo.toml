@@ -13,10 +13,10 @@ keywords = ["polars", "dataframe", "rows", "iterator"]
 [workspace.dependencies]
 polars = "0.44.2"
 chrono = "0.4.38"
-criterion = "0.5.1"
+criterion = { git = "https://github.com/bheisler/criterion.rs.git", rev = "260e2f1" }
 rand = "0.8.5"
 itertools = "0.13.0"
-proc-macro2 = "1.0.89"
+proc-macro2 = "1.0.92"
 quote = "1.0.37"
-syn = "2.0.87"
+syn = "2.0.89"
 deluxe = "0.5.0"

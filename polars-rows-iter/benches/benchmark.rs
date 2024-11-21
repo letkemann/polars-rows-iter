@@ -2,12 +2,22 @@ use criterion::*;
 use itertools::izip;
 use polars::prelude::*;
 use polars_rows_iter::*;
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, hint::black_box, time::Duration};
 pub type IsOptional = bool;
 
 #[path = "../src/shared_test_helpers.rs"]
 mod shared;
 use shared::*;
+
+fn get_dataframe_heights_to_benchmark() -> Vec<usize> {
+    vec![1, 10, 100, 1_000, 10_000]
+}
+
+fn setup_group(group: &mut BenchmarkGroup<'_, measurement::WallTime>) {
+    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
+    group.plot_config(plot_config);
+    group.measurement_time(Duration::from_secs(8));
+}
 
 fn create_all_column_types_dataframe(height: usize) -> DataFrame {
     let columns = [
@@ -35,6 +45,8 @@ fn create_all_column_types_dataframe(height: usize) -> DataFrame {
             "_col_cat_opt",
             ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), true),
         ),
+        ("_col_bin", ColumnType(DataType::Binary, false)),
+        ("_col_bin_opt", ColumnType(DataType::Binary, true)),
     ]
     .into_iter()
     .collect::<HashMap<&str, ColumnType>>();
@@ -62,6 +74,53 @@ struct AllTypesRow<'a> {
     _col_str_opt: Option<&'a str>,
     _col_cat: &'a str,
     _col_cat_opt: Option<&'a str>,
+    _col_bin: &'a [u8],
+    _col_bin_opt: Option<&'a [u8]>,
+}
+
+fn add_all_column_types_group(c: &mut Criterion) {
+    let mut group = c.benchmark_group("all_types");
+    setup_group(&mut group);
+
+    for height in get_dataframe_heights_to_benchmark() {
+        let dataframe = create_all_column_types_dataframe(height);
+
+        group.bench_with_input(BenchmarkId::new(".rows_iter()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_rows_iter::<AllTypesRow>(df).unwrap();
+            })
+        });
+        group.bench_with_input(BenchmarkId::new("izip!()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_all_types_with_zipped_column_iterators(df).unwrap();
+            })
+        });
+        group.bench_with_input(BenchmarkId::new(".get_row()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_get_row(df).unwrap();
+            })
+        });
+    }
+
+    group.finish();
+}
+
+#[derive(Debug, FromDataFrameRow)]
+struct PrimitiveTypesRow {
+    _col_bool: bool,
+    _col_bool_opt: Option<bool>,
+    _col_i32: i32,
+    _col_i32_opt: Option<i32>,
+    _col_u32: u32,
+    _col_u32_opt: Option<u32>,
+    _col_i64: i64,
+    _col_i64_opt: Option<i64>,
+    _col_u64: u64,
+    _col_u64_opt: Option<u64>,
+    _col_f32: f32,
+    _col_f32_opt: Option<f32>,
+    _col_f64: f64,
+    _col_f64_opt: Option<f64>,
 }
 
 fn create_primitive_column_types_dataframe(height: usize) -> DataFrame {
@@ -87,130 +146,9 @@ fn create_primitive_column_types_dataframe(height: usize) -> DataFrame {
     create_dataframe(columns.clone(), height)
 }
 
-#[derive(Debug, FromDataFrameRow)]
-struct PrimitiveTypesRow {
-    _col_bool: bool,
-    _col_bool_opt: Option<bool>,
-    _col_i32: i32,
-    _col_i32_opt: Option<i32>,
-    _col_u32: u32,
-    _col_u32_opt: Option<u32>,
-    _col_i64: i64,
-    _col_i64_opt: Option<i64>,
-    _col_u64: u64,
-    _col_u64_opt: Option<u64>,
-    _col_f32: f32,
-    _col_f32_opt: Option<f32>,
-    _col_f64: f64,
-    _col_f64_opt: Option<f64>,
-}
-
-fn create_mandatory_column_types_dataframe(height: usize) -> DataFrame {
-    let columns = [
-        ("_col_bool", ColumnType(DataType::Boolean, false)),
-        ("_col_i32", ColumnType(DataType::Int32, false)),
-        ("_col_u32", ColumnType(DataType::UInt32, false)),
-        ("_col_i64", ColumnType(DataType::Int64, false)),
-        ("_col_u64", ColumnType(DataType::UInt64, false)),
-        ("_col_f32", ColumnType(DataType::Float32, false)),
-        ("_col_f64", ColumnType(DataType::Float64, false)),
-        ("_col_str", ColumnType(DataType::String, false)),
-        (
-            "_col_cat",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), false),
-        ),
-    ]
-    .into_iter()
-    .collect::<HashMap<&str, ColumnType>>();
-
-    create_dataframe(columns.clone(), height)
-}
-
-#[derive(Debug, FromDataFrameRow)]
-struct MandatoryTypesRow<'a> {
-    _col_bool: bool,
-    _col_i32: i32,
-    _col_u32: u32,
-    _col_i64: i64,
-    _col_u64: u64,
-    _col_f32: f32,
-    _col_f64: f64,
-    _col_str: &'a str,
-    _col_cat: &'a str,
-}
-
-fn create_optional_column_types_dataframe(height: usize) -> DataFrame {
-    let columns = [
-        ("_col_bool_opt", ColumnType(DataType::Boolean, true)),
-        ("_col_i32_opt", ColumnType(DataType::Int32, true)),
-        ("_col_u32_opt", ColumnType(DataType::UInt32, true)),
-        ("_col_i64_opt", ColumnType(DataType::Int64, true)),
-        ("_col_u64_opt", ColumnType(DataType::UInt64, true)),
-        ("_col_f32_opt", ColumnType(DataType::Float32, true)),
-        ("_col_f64_opt", ColumnType(DataType::Float64, true)),
-        ("_col_str_opt", ColumnType(DataType::String, true)),
-        (
-            "_col_cat_opt",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), true),
-        ),
-    ]
-    .into_iter()
-    .collect::<HashMap<&str, ColumnType>>();
-
-    create_dataframe(columns.clone(), height)
-}
-
-#[derive(Debug, FromDataFrameRow)]
-struct OptionalTypesRow<'a> {
-    _col_bool_opt: Option<bool>,
-    _col_i32_opt: Option<i32>,
-    _col_u32_opt: Option<u32>,
-    _col_i64_opt: Option<i64>,
-    _col_u64_opt: Option<u64>,
-    _col_f32_opt: Option<f32>,
-    _col_f64_opt: Option<f64>,
-    _col_str_opt: Option<&'a str>,
-    _col_cat_opt: Option<&'a str>,
-}
-
-fn get_dataframe_heights_to_benchmark() -> Vec<usize> {
-    vec![1usize, 10usize, 100usize, 1_000usize, 10_000usize]
-}
-
-fn add_all_column_types_group(c: &mut Criterion) {
-    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
-    let mut group = c.benchmark_group("all_types");
-    group.plot_config(plot_config);
-    group.measurement_time(Duration::from_secs(8));
-
-    for height in get_dataframe_heights_to_benchmark() {
-        let dataframe = create_all_column_types_dataframe(height);
-
-        group.bench_with_input(BenchmarkId::new(".rows_iter()", height), &dataframe, |b, df| {
-            b.iter(|| {
-                iterate_with_polars_rows_iter::<AllTypesRow>(df).unwrap();
-            })
-        });
-        group.bench_with_input(BenchmarkId::new("izip!()", height), &dataframe, |b, df| {
-            b.iter(|| {
-                iterate_all_types_with_zipped_column_iterators(df).unwrap();
-            })
-        });
-        group.bench_with_input(BenchmarkId::new(".get_row()", height), &dataframe, |b, df| {
-            b.iter(|| {
-                iterate_with_polars_get_row(df).unwrap();
-            })
-        });
-    }
-
-    group.finish();
-}
-
 fn add_primitive_column_types_group(c: &mut Criterion) {
-    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     let mut group = c.benchmark_group("primitive_types");
-    group.plot_config(plot_config);
-    group.measurement_time(Duration::from_secs(10));
+    setup_group(&mut group);
 
     for height in get_dataframe_heights_to_benchmark() {
         let dataframe = create_primitive_column_types_dataframe(height);
@@ -235,11 +173,43 @@ fn add_primitive_column_types_group(c: &mut Criterion) {
     group.finish();
 }
 
+#[derive(Debug, FromDataFrameRow)]
+struct MandatoryTypesRow<'a> {
+    _col_bool: bool,
+    _col_i32: i32,
+    _col_u32: u32,
+    _col_i64: i64,
+    _col_u64: u64,
+    _col_f32: f32,
+    _col_f64: f64,
+    _col_str: &'a str,
+    _col_cat: &'a str,
+}
+
+fn create_mandatory_column_types_dataframe(height: usize) -> DataFrame {
+    let columns = [
+        ("_col_bool", ColumnType(DataType::Boolean, false)),
+        ("_col_i32", ColumnType(DataType::Int32, false)),
+        ("_col_u32", ColumnType(DataType::UInt32, false)),
+        ("_col_i64", ColumnType(DataType::Int64, false)),
+        ("_col_u64", ColumnType(DataType::UInt64, false)),
+        ("_col_f32", ColumnType(DataType::Float32, false)),
+        ("_col_f64", ColumnType(DataType::Float64, false)),
+        ("_col_str", ColumnType(DataType::String, false)),
+        (
+            "_col_cat",
+            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), false),
+        ),
+    ]
+    .into_iter()
+    .collect::<HashMap<&str, ColumnType>>();
+
+    create_dataframe(columns.clone(), height)
+}
+
 fn add_mandatory_column_types_group(c: &mut Criterion) {
-    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     let mut group = c.benchmark_group("mandatory_types");
-    group.plot_config(plot_config);
-    group.measurement_time(Duration::from_secs(10));
+    setup_group(&mut group);
 
     for height in get_dataframe_heights_to_benchmark() {
         let dataframe = create_mandatory_column_types_dataframe(height);
@@ -264,11 +234,43 @@ fn add_mandatory_column_types_group(c: &mut Criterion) {
     group.finish();
 }
 
+#[derive(Debug, FromDataFrameRow)]
+struct OptionalTypesRow<'a> {
+    _col_bool_opt: Option<bool>,
+    _col_i32_opt: Option<i32>,
+    _col_u32_opt: Option<u32>,
+    _col_i64_opt: Option<i64>,
+    _col_u64_opt: Option<u64>,
+    _col_f32_opt: Option<f32>,
+    _col_f64_opt: Option<f64>,
+    _col_str_opt: Option<&'a str>,
+    _col_cat_opt: Option<&'a str>,
+}
+
+fn create_optional_column_types_dataframe(height: usize) -> DataFrame {
+    let columns = [
+        ("_col_bool_opt", ColumnType(DataType::Boolean, true)),
+        ("_col_i32_opt", ColumnType(DataType::Int32, true)),
+        ("_col_u32_opt", ColumnType(DataType::UInt32, true)),
+        ("_col_i64_opt", ColumnType(DataType::Int64, true)),
+        ("_col_u64_opt", ColumnType(DataType::UInt64, true)),
+        ("_col_f32_opt", ColumnType(DataType::Float32, true)),
+        ("_col_f64_opt", ColumnType(DataType::Float64, true)),
+        ("_col_str_opt", ColumnType(DataType::String, true)),
+        (
+            "_col_cat_opt",
+            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), true),
+        ),
+    ]
+    .into_iter()
+    .collect::<HashMap<&str, ColumnType>>();
+
+    create_dataframe(columns.clone(), height)
+}
+
 fn add_optional_column_types_group(c: &mut Criterion) {
-    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     let mut group = c.benchmark_group("optional_types");
-    group.plot_config(plot_config);
-    group.measurement_time(Duration::from_secs(10));
+    setup_group(&mut group);
 
     for height in get_dataframe_heights_to_benchmark() {
         let dataframe = create_optional_column_types_dataframe(height);
@@ -342,6 +344,8 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
     let col_str_opt_iter = df.column("_col_str_opt")?.str()?.into_iter();
     let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
     let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
+    let col_bin_iter = df.column("_col_bin")?.binary()?.into_iter();
+    let col_bin_opt_iter = df.column("_col_bin_opt")?.binary()?.into_iter();
 
     let row_iter = izip!(
         col_bool_iter,
@@ -362,6 +366,8 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
         col_str_opt_iter,
         col_cat_iter,
         col_cat_opt_iter,
+        col_bin_iter,
+        col_bin_opt_iter
     );
 
     for (
@@ -383,6 +389,8 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
         col_str_opt_val,
         col_cat_val,
         col_cat_opt_val,
+        col_bin_val,
+        col_bin_opt_val,
     ) in row_iter
     {
         let col_bool_val: bool = col_bool_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
@@ -394,6 +402,7 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
         let col_f64_val: f64 = col_f64_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
         let col_str_val: &str = col_str_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
         let col_cat_val: &str = col_cat_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
+        let col_bin_val: &[u8] = col_bin_val.ok_or_else(|| polars_err!(SchemaMismatch: "Unexpected null value"))?;
 
         black_box(col_bool_val);
         black_box(col_bool_opt_val);
@@ -413,6 +422,8 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
         black_box(col_str_opt_val);
         black_box(col_cat_val);
         black_box(col_cat_opt_val);
+        black_box(col_bin_val);
+        black_box(col_bin_opt_val);
     }
 
     Ok(())

@@ -64,6 +64,11 @@ pub fn create_random_string(rng: &mut StdRng) -> String {
     rng.sample_iter(&Alphanumeric).take(size).map(char::from).collect()
 }
 
+pub fn create_random_binary(rng: &mut StdRng) -> Vec<u8> {
+    let size: usize = rng.gen_range(4..32);
+    rng.sample_iter(&Alphanumeric).take(size).collect()
+}
+
 pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: usize, rng: &mut StdRng) -> Column {
     // println!("Creating column {name} with type {dtype} (optional: {optional})");
     let name = name.into();
@@ -175,6 +180,30 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             false => Column::new(name, create_values(height, || rng.gen::<i64>()))
                 .cast(&DataType::Duration(unit))
                 .unwrap(),
+        },
+        DataType::Binary => match optional {
+            true => Column::new(
+                name,
+                create_values(height, || create_optional(rng, |rng| create_random_binary(rng))),
+            ),
+            false => Column::new(name, create_values(height, || create_random_binary(rng))),
+        },
+        DataType::BinaryOffset => match optional {
+            true => {
+                let values: LargeBinaryArray =
+                    create_values(height, || create_optional(rng, |rng| create_random_binary(rng)))
+                        .into_iter()
+                        .collect();
+
+                BinaryOffsetChunked::from(values).into_column().with_name(name.into())
+            }
+            false => {
+                let values: LargeBinaryArray = create_values(height, || Some(create_random_binary(rng)))
+                    .into_iter()
+                    .collect();
+
+                BinaryOffsetChunked::from(values).into_column().with_name(name.into())
+            }
         },
         _ => todo!(),
     }

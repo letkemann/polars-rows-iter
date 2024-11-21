@@ -68,14 +68,6 @@ mod tests {
         let col = create_column("col", dtype.clone(), false, height, &mut rng);
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
-        let column = Column::new("name".into(), vec![12345680000000i64]);
-        println!("{column:?}");
-        let column = column.cast(&DataType::Time).unwrap();
-        println!("{column:?}");
-
-        println!("{col:?}");
-        println!("{col_opt:?}");
-
         let col_values = col
             .as_series()
             .unwrap()

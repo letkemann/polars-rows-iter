@@ -32,7 +32,18 @@ impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
 }
 
 fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a [u8]>> + 'a>> {
-    Ok(Box::new(column.binary()?.into_iter()))
+    let column_name = column.name().as_str();
+    let iter = match column.dtype() {
+        DataType::Binary => column.binary()?.into_iter(),
+        DataType::BinaryOffset => column.binary_offset()?.into_iter(),
+        dtype => {
+            return Err(
+                polars_err!(SchemaMismatch: "Cannot get &[u8] from column '{column_name}' with dtype : {dtype}"),
+            )
+        }
+    };
+
+    Ok(Box::new(iter))
 }
 
 #[cfg(test)]
@@ -63,6 +74,46 @@ mod tests {
 
         let col_opt_values = col_opt.clone();
         let col_opt_values = col_opt_values.binary().unwrap().into_iter().collect_vec();
+
+        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+
+        let col_iter = col_values.into_iter();
+        let col_opt_iter = col_opt_values.into_iter();
+
+        let expected_rows = izip!(col_iter, col_opt_iter)
+            .map(|(col, col_opt)| TestRow { col, col_opt })
+            .collect_vec();
+
+        #[derive(Debug, FromDataFrameRow, PartialEq)]
+        struct TestRow<'a> {
+            col: &'a [u8],
+            col_opt: Option<&'a [u8]>,
+        }
+
+        let rows = df.rows_iter::<TestRow>().unwrap().map(|v| v.unwrap()).collect_vec();
+
+        assert_eq!(rows, expected_rows)
+    }
+
+    #[test]
+    fn binary_offset_test<'a>() {
+        let mut rng = StdRng::seed_from_u64(0);
+        let height = ROW_COUNT;
+        let dtype = DataType::BinaryOffset;
+
+        let col = create_column("col", dtype.clone(), false, height, &mut rng);
+        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+
+        let col_values = col.clone();
+        let col_values = col_values
+            .binary_offset()
+            .unwrap()
+            .into_iter()
+            .map(|v| v.unwrap())
+            .collect_vec();
+
+        let col_opt_values = col_opt.clone();
+        let col_opt_values = col_opt_values.binary_offset().unwrap().into_iter().collect_vec();
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
