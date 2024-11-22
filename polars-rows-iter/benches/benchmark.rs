@@ -9,6 +9,15 @@ pub type IsOptional = bool;
 mod shared;
 use shared::*;
 
+#[cfg(feature = "dtype-categorical")]
+#[allow(dead_code)]
+fn check_categorical_feature_is_enabled() {}
+
+#[cfg(not(feature = "dtype-categorical"))]
+fn check_categorical_feature_is_enabled() {
+    panic!("!!! Please run 'cargo bench' with '--all-features' flag !!!")
+}
+
 fn get_dataframe_heights_to_benchmark() -> Vec<usize> {
     vec![1, 10, 100, 1_000, 10_000]
 }
@@ -295,7 +304,9 @@ fn add_optional_column_types_group(c: &mut Criterion) {
     group.finish();
 }
 
-pub fn iteration_compare(c: &mut Criterion) {
+pub fn collect_groups(c: &mut Criterion) {
+    check_categorical_feature_is_enabled();
+
     add_all_column_types_group(c);
     add_primitive_column_types_group(c);
     add_mandatory_column_types_group(c);
@@ -614,5 +625,5 @@ fn iterate_optional_types_with_zipped_column_iterators(df: &DataFrame) -> Polars
     Ok(())
 }
 
-criterion_group!(benches, iteration_compare);
+criterion_group!(benches, collect_groups);
 criterion_main!(benches);

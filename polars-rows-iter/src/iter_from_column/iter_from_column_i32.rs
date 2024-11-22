@@ -60,7 +60,7 @@ mod tests {
     create_test_for_type!(i32_as_date_test, i32, date, DataType::Date, ROW_COUNT);
 
     #[test]
-    fn my_test<'a>() {
+    fn i32_as_time_test() {
         let mut rng = StdRng::seed_from_u64(0);
         let height = 64;
         let dtype = DataType::Time;

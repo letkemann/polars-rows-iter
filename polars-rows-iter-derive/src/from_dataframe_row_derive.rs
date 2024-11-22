@@ -5,7 +5,7 @@ use syn::{
     LifetimeParam, PathArguments, Token, Type, TypeReference,
 };
 
-const ROW_ITERATOR_NAME: &'static str = "RowsIterator";
+const ROW_ITERATOR_NAME: &str = "RowsIterator";
 
 #[derive(Debug)]
 struct FieldInfo {
@@ -74,8 +74,7 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         #iterator_struct
         #iterator_struct_impl
         #iterator_impl_fo_iterator_struct
-    }
-    .into();
+    };
 
     stream
 }
@@ -98,14 +97,12 @@ fn create_impl_generics(struct_generics: &Generics, lifetime: &LifetimeParam) ->
         .map(|p| GenericParam::Type(p.clone()))
         .chain(std::iter::once(GenericParam::Lifetime(lifetime.clone())));
 
-    let generics = Generics {
+    Generics {
         lt_token: Some(Token![<](Span::call_site())),
         params: Punctuated::from_iter(generics),
         gt_token: Some(Token![>](Span::call_site())),
         where_clause: None,
-    };
-
-    generics
+    }
 }
 
 fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> proc_macro2::TokenStream {
@@ -189,7 +186,7 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
     let mut is_optional = false;
     let inner_ty = get_inner_type_from_options(ty.clone(), &mut is_optional);
 
-    let field_info = FieldInfo {
+    FieldInfo {
         name,
         ident,
         iter_ident,
@@ -197,11 +194,7 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
         inner_ty,
         is_optional,
         column_name,
-    };
-
-    // println!("{field_info:?}");
-
-    field_info
+    }
 }
 
 fn try_get_inner_option_type(ty: &Type) -> Option<Type> {
@@ -289,6 +282,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
     quote! {
         #[automatically_derived]
         impl<#lifetime> #iter_struct_ident <#lifetime> {
+            #[allow(clippy::too_many_arguments)]
             fn create(
                 &self,
                 #(#fn_params,)*

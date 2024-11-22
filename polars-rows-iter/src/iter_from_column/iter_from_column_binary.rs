@@ -56,7 +56,7 @@ mod tests {
     use shared_test_helpers::*;
 
     #[test]
-    fn binary_test<'a>() {
+    fn binary_test() {
         let mut rng = StdRng::seed_from_u64(0);
         let height = ROW_COUNT;
         let dtype = DataType::Binary;
@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn binary_offset_test<'a>() {
+    fn binary_offset_test() {
         let mut rng = StdRng::seed_from_u64(0);
         let height = ROW_COUNT;
         let dtype = DataType::BinaryOffset;

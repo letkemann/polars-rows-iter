@@ -184,25 +184,24 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
         DataType::Binary => match optional {
             true => Column::new(
                 name,
-                create_values(height, || create_optional(rng, |rng| create_random_binary(rng))),
+                create_values(height, || create_optional(rng, create_random_binary)),
             ),
             false => Column::new(name, create_values(height, || create_random_binary(rng))),
         },
         DataType::BinaryOffset => match optional {
             true => {
-                let values: LargeBinaryArray =
-                    create_values(height, || create_optional(rng, |rng| create_random_binary(rng)))
-                        .into_iter()
-                        .collect();
+                let values: LargeBinaryArray = create_values(height, || create_optional(rng, create_random_binary))
+                    .into_iter()
+                    .collect();
 
-                BinaryOffsetChunked::from(values).into_column().with_name(name.into())
+                BinaryOffsetChunked::from(values).into_column().with_name(name)
             }
             false => {
                 let values: LargeBinaryArray = create_values(height, || Some(create_random_binary(rng)))
                     .into_iter()
                     .collect();
 
-                BinaryOffsetChunked::from(values).into_column().with_name(name.into())
+                BinaryOffsetChunked::from(values).into_column().with_name(name)
             }
         },
         _ => todo!(),
@@ -223,7 +222,7 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
 macro_rules! create_test_for_type {
     ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
         #[test]
-        fn $func_name<'a>() {
+        fn $func_name() {
             let mut rng = StdRng::seed_from_u64(0);
             let height = $height;
             let dtype = $dtype;

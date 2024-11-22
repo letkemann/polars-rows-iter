@@ -13,6 +13,6 @@ impl<'a> DataframeRowsIterExt<'a> for DataFrame {
     where
         T: FromDataFrameRow<'a>,
     {
-        Ok(T::from_dataframe(self)?)
+        T::from_dataframe(self)
     }
 }
