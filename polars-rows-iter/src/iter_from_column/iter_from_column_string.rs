@@ -1,8 +1,9 @@
+use super::iter_from_column_str::create_iter;
 use super::*;
 use iter_from_column_trait::IterFromColumn;
 use polars::prelude::*;
 
-impl<'a> IterFromColumn<'a> for &'a str {
+impl<'a> IterFromColumn<'a> for String {
     type RawInner = &'a str;
     fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
         create_iter(column)
@@ -13,11 +14,13 @@ impl<'a> IterFromColumn<'a> for &'a str {
     where
         Self: Sized,
     {
-        polars_value.ok_or_else(|| <&'a str as IterFromColumn<'a>>::unexpected_null_value_error(column_name))
+        Ok(polars_value
+            .ok_or_else(|| <&'a str as IterFromColumn<'a>>::unexpected_null_value_error(column_name))?
+            .to_string())
     }
 }
 
-impl<'a> IterFromColumn<'a> for Option<&'a str> {
+impl<'a> IterFromColumn<'a> for Option<String> {
     type RawInner = &'a str;
     fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
         create_iter(column)
@@ -28,33 +31,8 @@ impl<'a> IterFromColumn<'a> for Option<&'a str> {
     where
         Self: Sized,
     {
-        Ok(polars_value)
+        Ok(polars_value.map(|s| s.to_string()))
     }
-}
-
-fn create_str_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    Ok(Box::new(column.str()?.iter()))
-}
-
-#[cfg(feature = "dtype-categorical")]
-fn create_cat_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    Ok(Box::new(column.categorical()?.iter_str()))
-}
-
-pub fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    let iter = match column.dtype() {
-        DataType::String => create_str_iter(column)?,
-        #[cfg(feature = "dtype-categorical")]
-        DataType::Categorical(_, _) | DataType::Enum(_, _) => create_cat_iter(column)?,
-        dtype => {
-            let column_name = column.name().as_str();
-            return Err(
-                polars_err!(SchemaMismatch: "Cannot get &str from column '{column_name}' with dtype : {dtype}"),
-            );
-        }
-    };
-
-    Ok(iter)
 }
 
 #[cfg(test)]
@@ -86,20 +64,17 @@ mod tests {
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.iter();
-        let col_opt_iter = col_opt_values.iter();
+        let col_iter = col_values.into_iter();
+        let col_opt_iter = col_opt_values.into_iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow {
-                col: col.as_ref(),
-                col_opt: col_opt.as_ref().map(|v| v.as_str()),
-            })
+            .map(|(col, col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]
-        struct TestRow<'a> {
-            col: &'a str,
-            col_opt: Option<&'a str>,
+        struct TestRow {
+            col: String,
+            col_opt: Option<String>,
         }
 
         let rows = df.rows_iter::<TestRow>().unwrap().map(|v| v.unwrap()).collect_vec();
@@ -132,20 +107,17 @@ mod tests {
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.iter();
-        let col_opt_iter = col_opt_values.iter();
+        let col_iter = col_values.into_iter();
+        let col_opt_iter = col_opt_values.into_iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow {
-                col: col.as_ref(),
-                col_opt: col_opt.as_ref().map(|v| v.as_str()),
-            })
+            .map(|(col, col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]
-        struct TestRow<'a> {
-            col: &'a str,
-            col_opt: Option<&'a str>,
+        struct TestRow {
+            col: String,
+            col_opt: Option<String>,
         }
 
         let rows = df.rows_iter::<TestRow>().unwrap().map(|v| v.unwrap()).collect_vec();
@@ -181,20 +153,17 @@ mod tests {
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 
-        let col_iter = col_values.iter();
-        let col_opt_iter = col_opt_values.iter();
+        let col_iter = col_values.into_iter();
+        let col_opt_iter = col_opt_values.into_iter();
 
         let expected_rows = izip!(col_iter, col_opt_iter)
-            .map(|(col, col_opt)| TestRow {
-                col: col.as_ref(),
-                col_opt: col_opt.as_ref().map(|v| v.as_str()),
-            })
+            .map(|(col, col_opt)| TestRow { col, col_opt })
             .collect_vec();
 
         #[derive(Debug, FromDataFrameRow, PartialEq)]
-        struct TestRow<'a> {
-            col: &'a str,
-            col_opt: Option<&'a str>,
+        struct TestRow {
+            col: String,
+            col_opt: Option<String>,
         }
 
         let rows = df.rows_iter::<TestRow>().unwrap().map(|v| v.unwrap()).collect_vec();

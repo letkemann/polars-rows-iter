@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use polars::prelude::*;
 use rand::{
     distributions::{Alphanumeric, Distribution, Standard},
     rngs::StdRng,
     Rng, SeedableRng,
 };
+use std::collections::HashMap;
 
 pub type IsOptional = bool;
 
@@ -67,6 +66,31 @@ pub fn create_random_string(rng: &mut StdRng) -> String {
 pub fn create_random_binary(rng: &mut StdRng) -> Vec<u8> {
     let size: usize = rng.gen_range(4..32);
     rng.sample_iter(&Alphanumeric).take(size).collect()
+}
+
+pub fn create_enum_values<'a>(mapping: &'a RevMapping, height: usize, rng: &mut StdRng) -> Vec<&'a str> {
+    (0..height)
+        .map(|_| {
+            let enum_index = rng.gen_range(0..mapping.len() as u32);
+            mapping.get(enum_index)
+        })
+        .collect()
+}
+
+pub fn create_optional_enum_values<'a>(
+    mapping: &'a RevMapping,
+    height: usize,
+    rng: &mut StdRng,
+) -> Vec<Option<&'a str>> {
+    (0..height)
+        .map(|_| {
+            let enum_index = rng.gen_range(0..mapping.len() as u32);
+            match rng.gen_bool(0.5) {
+                true => Some(mapping.get(enum_index)),
+                false => None,
+            }
+        })
+        .collect()
 }
 
 pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: usize, rng: &mut StdRng) -> Column {
@@ -134,6 +158,20 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             false => Column::new(name, create_values(height, || create_random_string(rng)))
                 .cast(&DataType::Categorical(mapping, ordering))
                 .unwrap(),
+        },
+        DataType::Enum(mapping, ordering) => match optional {
+            true => Column::new(
+                name,
+                create_optional_enum_values(mapping.as_ref().unwrap().as_ref(), height, rng),
+            )
+            .cast(&DataType::Enum(mapping, ordering))
+            .unwrap(),
+            false => Column::new(
+                name,
+                create_enum_values(mapping.as_ref().unwrap().as_ref(), height, rng),
+            )
+            .cast(&DataType::Enum(mapping, ordering))
+            .unwrap(),
         },
         DataType::Datetime(unit, zone) => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))

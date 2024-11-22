@@ -95,26 +95,28 @@
 //! |✓|`f64`|`Float64`
 //! |✓|`&str`|`String`
 //! |✓|`&str`|`Categorical(..)`|`dtype-categorical`
+//! |✓|`&str`|`Enum(..)`|`dtype-categorical`
+//! |✓|`String`|`String`
+//! |✓|`String`|`Categorical(..)`|`dtype-categorical`
+//! |✓|`String`|`Enum(..)`|`dtype-categorical`
 //! |✓|`&[u8]`|`Binary`
 //! |✓|`&[u8]`|`BinaryOffset`
+//! |✓|`Series`|`List(..)`
 //! |✓|`chrono::NaiveDateTime`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::DateTime<Utc>`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::Date`|`Date`|`chrono`|
-//! |?|?|`List(..)`
-//! |?|?|`Array(..)`|`dtype-array`
-//! |?|?|`Enum(..)`|`dtype-categorical`
-//! |?|?|`Decimal(..)`|`dtype-decimal`
-//! |?|?|`Struct(..)`|`dtype-struct`
+//! |?|?|`Array(..)`|
+//! |?|?|`Decimal(..)`|
+//! |?|?|`Struct(..)`|
 //! |X|X|`Null`
 //! |X|X|`Unknown(..)`|
-//! |X|X|`Object(..)`|`object`
+//! |X|X|`Object(..)`|
 //!
 //! TODO: Support is planned <br>
 //! ?: Support not yet certain<br>
 //! X: No Support
 //!
 //! ## Limitations
-//! * Currently supports only primitive and string/categorical types
 //! * No generics in row structs supported
 
 mod dataframe_rows_iter_ext;
