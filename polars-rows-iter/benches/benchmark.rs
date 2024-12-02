@@ -1,6 +1,6 @@
 use criterion::*;
 use itertools::izip;
-use polars::prelude::*;
+use polars::{frame::row::Row, prelude::*};
 use polars_rows_iter::*;
 use std::{collections::HashMap, hint::black_box, time::Duration};
 pub type IsOptional = bool;
@@ -109,6 +109,11 @@ fn add_all_column_types_group(c: &mut Criterion) {
                 iterate_with_polars_get_row(df).unwrap();
             })
         });
+        group.bench_with_input(BenchmarkId::new(".get_row_amortized()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_get_row_amortized(df).unwrap();
+            })
+        });
     }
 
     group.finish();
@@ -177,6 +182,11 @@ fn add_primitive_column_types_group(c: &mut Criterion) {
                 iterate_with_polars_get_row(black_box(df)).unwrap();
             })
         });
+        group.bench_with_input(BenchmarkId::new(".get_row_amortized()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_get_row_amortized(black_box(df)).unwrap();
+            })
+        });
     }
 
     group.finish();
@@ -236,6 +246,11 @@ fn add_mandatory_column_types_group(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new(".get_row()", height), &dataframe, |b, df| {
             b.iter(|| {
                 iterate_with_polars_get_row(black_box(df)).unwrap();
+            })
+        });
+        group.bench_with_input(BenchmarkId::new(".get_row_amortized()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_get_row_amortized(black_box(df)).unwrap();
             })
         });
     }
@@ -299,6 +314,11 @@ fn add_optional_column_types_group(c: &mut Criterion) {
                 iterate_with_polars_get_row(df).unwrap();
             })
         });
+        group.bench_with_input(BenchmarkId::new(".get_row_amortized()", height), &dataframe, |b, df| {
+            b.iter(|| {
+                iterate_with_polars_get_row_amortized(df).unwrap();
+            })
+        });
     }
 
     group.finish();
@@ -331,6 +351,18 @@ fn iterate_with_polars_get_row(df: &DataFrame) -> PolarsResult<()> {
     for idx in 0..df.height() {
         let row = df.get_row(idx)?;
         black_box(row);
+    }
+
+    Ok(())
+}
+
+fn iterate_with_polars_get_row_amortized(df: &DataFrame) -> PolarsResult<()> {
+    let column_count = df.get_columns().len();
+    let mut row = Row::new(vec![AnyValue::Null; column_count]);
+
+    for idx in 0..df.height() {
+        df.get_row_amortized(idx, &mut row)?;
+        black_box(&row);
     }
 
     Ok(())
