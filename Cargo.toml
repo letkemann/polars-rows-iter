@@ -11,12 +11,12 @@ description = "Library for easy and convenient row iteration of polars dataframe
 keywords = ["polars", "dataframe", "rows", "iterator"]
 
 [workspace.dependencies]
-polars = "0.44.2"
+polars = "0.45.0"
 chrono = "0.4.38"
 criterion = { git = "https://github.com/bheisler/criterion.rs.git", rev = "260e2f1" }
 rand = "0.8.5"
 itertools = "0.13.0"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
-syn = "2.0.89"
+syn = "2.0.90"
 deluxe = "0.5.0"
