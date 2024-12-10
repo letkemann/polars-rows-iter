@@ -49,7 +49,8 @@ pub fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item
         dtype => {
             let column_name = column.name().as_str();
             return Err(
-                polars_err!(SchemaMismatch: "Cannot get &str from column '{column_name}' with dtype : {dtype}"),
+                polars_err!(SchemaMismatch: "Cannot get &str from column '{column_name}' with dtype '{dtype}'.\
+                                             Make sure to enable 'dtype-categorical' feature for 'Categorical' and 'Enum' dtypes."),
             );
         }
     };
