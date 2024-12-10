@@ -1,8 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    punctuated::Punctuated, DeriveInput, Field, GenericArgument, GenericParam, Generics, Ident, Lifetime,
-    LifetimeParam, PathArguments, Token, Type, TypeReference,
+    punctuated::Punctuated, spanned::Spanned, DeriveInput, Expr, ExprLit, Field, GenericArgument, GenericParam,
+    Generics, Ident, Lifetime, LifetimeParam, LitStr, PathArguments, Token, Type, TypeReference,
 };
 
 const ROW_ITERATOR_NAME: &str = "RowsIterator";
@@ -15,7 +15,7 @@ struct FieldInfo {
     pub iter_ident: Ident,
     pub inner_ty: Type,
     pub is_optional: bool,
-    pub column_name: String,
+    pub column_name_expr: Expr,
 }
 
 struct Context {
@@ -115,13 +115,12 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
         where_clause: None,
     };
 
-    // let (lifetime, lifetime_generics) = get_or_create_lifetime_generics(generics);
     let impl_generics = create_impl_generics(generics, &lifetime);
 
     let iter_create_list = ctx.fields_list.iter().map(|f| {
         let ident_iter = &f.iter_ident;
         let ident_dtype = &f.dtype_ident;
-        let column_name = f.column_name.as_str();
+        let column_name = &f.column_name_expr;
         let field_type = remove_lifetime(f.inner_ty.clone());
         quote! {
             let column = dataframe.column(#column_name)?;
@@ -165,7 +164,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
 
 #[derive(Debug, deluxe::ExtractAttributes)]
 #[deluxe(attributes(column))]
-struct ColumnFieldAttributes(#[deluxe(flatten)] Vec<String>);
+struct ColumnFieldAttributes(#[deluxe(flatten)] Vec<syn::Expr>);
 
 fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
     let ident = field.ident.as_ref().expect("anonymous fields not supported").clone();
@@ -177,8 +176,11 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
 
     let attrs: ColumnFieldAttributes = deluxe::extract_attributes(&mut field).unwrap();
 
-    let column_name = match attrs.0.len() {
-        0 => name.clone(),
+    let column_name_expr = match attrs.0.len() {
+        0 => Expr::Lit(ExprLit {
+            attrs: vec![],
+            lit: syn::Lit::Str(LitStr::new(&name, field.span())),
+        }),
         1 => attrs.0[0].clone(),
         _ => panic!("Field '{name}' can have only one column name"),
     };
@@ -193,7 +195,7 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
         dtype_ident,
         inner_ty,
         is_optional,
-        column_name,
+        column_name_expr,
     }
 }
 
@@ -263,7 +265,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
         let ident = &field_info.ident;
         let ident_dtype = &field_info.dtype_ident;
         let field_type = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
-        let column_name = &field_info.column_name;
+        let column_name = &field_info.column_name_expr;
 
         match field_info.is_optional {
             true => quote! { #ident: <Option<#field_type> as IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
