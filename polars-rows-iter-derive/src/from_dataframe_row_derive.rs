@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
@@ -20,6 +21,7 @@ struct FieldInfo {
 
 struct Context {
     struct_ident: Ident,
+    builder_struct_ident: Ident,
     iter_struct_ident: Ident,
     fields_list: Vec<FieldInfo>,
     has_lifetime: bool,
@@ -57,23 +59,34 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         _ => panic!("Multiple lifetimes in row structure are not supported!"),
     };
 
+    let builder_struct_ident = Ident::new(&format!("{struct_ident}ColumnBuilder"), Span::call_site());
+
     let ctx = Context {
         struct_ident,
+        builder_struct_ident,
         iter_struct_ident,
         fields_list,
         has_lifetime,
     };
 
+    let builder_struct = create_builder_struct(&ctx);
+    let builder_struct_impl = create_builder_struct_impl(&ctx);
+    let builder_struct_column_name_builder_impl = create_builder_struct_column_name_builder_impl(&ctx);
+    let row_struct_impl = create_row_struct_impl(&ctx, &ast.generics);
     let from_dataframe_row_trait_impl = create_from_dataframe_row_trait_impl(&ctx, &ast.generics);
     let iterator_struct = create_iterator_struct(&ctx);
     let iterator_struct_impl = create_iterator_struct_impl(&ctx);
-    let iterator_impl_fo_iterator_struct = create_iterator_impl_for_iterator_struct(&ctx);
+    let iterator_impl_for_iterator_struct = create_iterator_impl_for_iterator_struct(&ctx);
 
     let stream: TokenStream = quote! {
+        #builder_struct
+        #builder_struct_impl
+        #builder_struct_column_name_builder_impl
+        #row_struct_impl
         #from_dataframe_row_trait_impl
         #iterator_struct
         #iterator_struct_impl
-        #iterator_impl_fo_iterator_struct
+        #iterator_impl_for_iterator_struct
     };
 
     stream
@@ -105,8 +118,82 @@ fn create_impl_generics(struct_generics: &Generics, lifetime: &LifetimeParam) ->
     }
 }
 
+fn create_builder_struct(ctx: &Context) -> proc_macro2::TokenStream {
+    let builder_ident = &ctx.builder_struct_ident;
+
+    quote! {
+        struct #builder_ident<'a> {
+            columns: std::collections::HashMap<&'a str, &'a str>,
+        }
+    }
+}
+
+fn create_builder_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
+    let builder_struct_ident = &ctx.builder_struct_ident;
+
+    let field_column_func_list = ctx
+        .fields_list
+        .iter()
+        .map(|f| {
+            let field_ident = &f.ident;
+            let field_name = f.ident.to_string();
+            quote! {
+                fn #field_ident(&mut self, column_name: &'a str) -> &mut Self
+                {
+                    let _ = self.columns.insert(#field_name, column_name);
+                    self
+                }
+            }
+        })
+        .collect_vec();
+
+    quote! {
+        impl<'a> #builder_struct_ident<'a> {
+            #(#field_column_func_list)*
+        }
+    }
+}
+
+fn create_builder_struct_column_name_builder_impl(ctx: &Context) -> proc_macro2::TokenStream {
+    let builder_struct_ident = &ctx.builder_struct_ident;
+
+    quote! {
+        impl<'a> ColumnNameBuilder<'a> for #builder_struct_ident<'a> {
+            fn build(self) -> std::collections::HashMap<&'a str, &'a str> {
+                self.columns
+            }
+        }
+    }
+}
+
+fn create_row_struct_impl(ctx: &Context, generics: &Generics) -> proc_macro2::TokenStream {
+    let lifetime = create_lifetime_param("a");
+    let struct_ident = &ctx.struct_ident;
+    let struct_ident = match ctx.has_lifetime {
+        true => quote! { #struct_ident<#lifetime> },
+        false => quote! { #struct_ident },
+    };
+    let impl_generics = create_impl_generics(generics, &lifetime);
+
+    let column_name_expr_list = ctx.fields_list.iter().map(|f| &f.column_name_expr).collect_vec();
+
+    quote::quote! {
+        #[automatically_derived]
+        impl #impl_generics #struct_ident {
+            fn get_column_names() -> Vec<&'static str>
+                where
+                    Self: Sized
+            {
+                vec![#(#column_name_expr_list,)*]
+            }
+        }
+    }
+}
+
 fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> proc_macro2::TokenStream {
     let lifetime = create_lifetime_param("a");
+
+    let columns_param_ident = Ident::new("columns", Span::call_site());
 
     let lifetime_generics = Generics {
         lt_token: Some(Token![<](Span::call_site())),
@@ -118,13 +205,14 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
     let impl_generics = create_impl_generics(generics, &lifetime);
 
     let iter_create_list = ctx.fields_list.iter().map(|f| {
+        let field_name = f.ident.to_string();
         let ident_iter = &f.iter_ident;
         let ident_dtype = &f.dtype_ident;
         let column_name = &f.column_name_expr;
         let field_type = remove_lifetime(f.inner_ty.clone());
         quote! {
-            let column = dataframe.column(#column_name)?;
-            let #ident_iter = <#field_type as IterFromColumn<#lifetime>>::create_iter(&column)?;
+            let column = dataframe.column(#columns_param_ident.remove(#field_name).unwrap_or(#column_name))?;
+            let #ident_iter = <#field_type as IterFromColumn<#lifetime>>::create_iter(column)?;
             let #ident_dtype = column.dtype().clone();
         }
     });
@@ -147,16 +235,28 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
         false => quote! { #iter_struct_ident },
     };
 
+    let builder_struct_ident = &ctx.builder_struct_ident;
+
     quote::quote! {
         #[automatically_derived]
         impl #impl_generics FromDataFrameRow #lifetime_generics for #struct_ident {
-            fn from_dataframe(dataframe: & #lifetime polars::prelude::DataFrame) ->  polars::prelude::PolarsResult<Box<dyn Iterator<Item = polars::prelude::PolarsResult<Self>> + #lifetime>>
+            type Builder = #builder_struct_ident #lifetime_generics;
+            fn from_dataframe(
+                dataframe: & #lifetime polars::prelude::DataFrame,
+                mut #columns_param_ident: std::collections::HashMap<&str, &str>
+            ) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = polars::prelude::PolarsResult<Self>> + #lifetime>>
                 where
                     Self: Sized
             {
                 #(#iter_create_list)*
 
                 Ok(Box::new(#iter_struct_ident { #(#iter_ident_list,)* }))
+            }
+
+            fn create_builder() -> #builder_struct_ident #lifetime_generics {
+                #builder_struct_ident{
+                    columns: std::collections::HashMap::new()
+                }
             }
         }
     }
