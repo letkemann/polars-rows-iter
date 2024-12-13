@@ -33,7 +33,7 @@ fn run() -> PolarsResult<()> {
         columns
             .value_b(&value_b_column_name)
             .value_c(value_c_column_name)
-            .optional("col_d");
+            .optional("col_d")
     })?;
 
     for row in rows_iter {
