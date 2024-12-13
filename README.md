@@ -56,6 +56,7 @@ use polars_rows_iter::*;
 const ID: &str = "id";
 
 #[derive(Debug, FromDataFrameRow)]
+#[derive(PartialEq)] // for assert_eq
 struct MyRow<'a> {
     #[column(ID)]
     id: i32,
@@ -86,12 +87,21 @@ fn main() {
                 .value_c(value_c_column_name)
                 .optional("col_d")
         })
-        .unwrap();
+        .unwrap(); // ready to use row iterator
 
-    for row in rows_iter {
-        let row = row.unwrap();
-        println!("{row:?}");
-    }
+    // collect to vector for assert_eq
+    let rows_vec = rows_iter.collect::<PolarsResult<Vec<MyRow>>>().unwrap();
+
+    assert_eq!(
+        rows_vec,
+        [
+            MyRow { id: 1, value_b: "a", value_c: "A".to_string(), optional: Some(1.0) },
+            MyRow { id: 2, value_b: "b", value_c: "B".to_string(), optional: None },
+            MyRow { id: 3, value_b: "c", value_c: "C".to_string(), optional: None },
+            MyRow { id: 4, value_b: "d", value_c: "D".to_string(), optional: Some(2.0) },
+            MyRow { id: 5, value_b: "e", value_c: "E".to_string(), optional: Some(3.0) },
+        ]
+    );
 }
 ```
 
