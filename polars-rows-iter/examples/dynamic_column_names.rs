@@ -29,7 +29,7 @@ fn run() -> PolarsResult<()> {
     let value_b_column_name = "col_b".to_string();
     let value_c_column_name = "col_c";
 
-    let rows_iter = df.rows_iter_for_columns::<MyRow>(|columns| {
+    let rows_iter = df.rows_iter_with_columns::<MyRow>(|columns| {
         columns
             .value_b(&value_b_column_name)
             .value_c(value_c_column_name)
