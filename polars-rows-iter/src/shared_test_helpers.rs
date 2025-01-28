@@ -1,6 +1,6 @@
 use polars::prelude::*;
 use rand::{
-    distributions::{Alphanumeric, Distribution, Standard},
+    distr::{Alphanumeric, Distribution, StandardUniform},
     rngs::StdRng,
     Rng, SeedableRng,
 };
@@ -26,9 +26,9 @@ where
 }
 
 pub fn create_optional_bool(rng: &mut StdRng) -> Option<bool> {
-    let is_none = rng.gen_bool(0.5);
+    let is_none = rng.random_bool(0.5);
     if !is_none {
-        Some(rng.gen_bool(0.5))
+        Some(rng.random_bool(0.5))
     } else {
         None
     }
@@ -36,11 +36,11 @@ pub fn create_optional_bool(rng: &mut StdRng) -> Option<bool> {
 
 pub fn create_optional_number<T>(rng: &mut StdRng) -> Option<T>
 where
-    Standard: Distribution<T>,
+    StandardUniform: Distribution<T>,
 {
-    let is_none = rng.gen_bool(0.5);
+    let is_none = rng.random_bool(0.5);
     if !is_none {
-        Some(rng.gen())
+        Some(rng.random())
     } else {
         None
     }
@@ -50,7 +50,7 @@ pub fn create_optional<T, F>(rng: &mut StdRng, mut create_value: F) -> Option<T>
 where
     F: FnMut(&mut StdRng) -> T,
 {
-    let is_none = rng.gen_bool(0.5);
+    let is_none = rng.random_bool(0.5);
     if !is_none {
         Some(create_value(rng))
     } else {
@@ -59,19 +59,19 @@ where
 }
 
 pub fn create_random_string(rng: &mut StdRng) -> String {
-    let size: usize = rng.gen_range(4..32);
+    let size: usize = rng.random_range(4..32);
     rng.sample_iter(&Alphanumeric).take(size).map(char::from).collect()
 }
 
 pub fn create_random_binary(rng: &mut StdRng) -> Vec<u8> {
-    let size: usize = rng.gen_range(4..32);
+    let size: usize = rng.random_range(4..32);
     rng.sample_iter(&Alphanumeric).take(size).collect()
 }
 
 pub fn create_enum_values<'a>(mapping: &'a RevMapping, height: usize, rng: &mut StdRng) -> Vec<&'a str> {
     (0..height)
         .map(|_| {
-            let enum_index = rng.gen_range(0..mapping.len() as u32);
+            let enum_index = rng.random_range(0..mapping.len() as u32);
             mapping.get(enum_index)
         })
         .collect()
@@ -84,8 +84,8 @@ pub fn create_optional_enum_values<'a>(
 ) -> Vec<Option<&'a str>> {
     (0..height)
         .map(|_| {
-            let enum_index = rng.gen_range(0..mapping.len() as u32);
-            match rng.gen_bool(0.5) {
+            let enum_index = rng.random_range(0..mapping.len() as u32);
+            match rng.random_bool(0.5) {
                 true => Some(mapping.get(enum_index)),
                 false => None,
             }
@@ -99,47 +99,47 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
     match dtype {
         DataType::Boolean => match optional {
             true => Column::new(name, create_values(height, || create_optional_bool(rng))),
-            false => Column::new(name, create_values(height, || rng.gen_bool(0.5))),
+            false => Column::new(name, create_values(height, || rng.random_bool(0.5))),
         },
         DataType::UInt8 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<u8>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<u8>())),
+            false => Column::new(name, create_values(height, || rng.random::<u8>())),
         },
         DataType::UInt16 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<u16>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<u16>())),
+            false => Column::new(name, create_values(height, || rng.random::<u16>())),
         },
         DataType::UInt32 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<u32>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<u32>())),
+            false => Column::new(name, create_values(height, || rng.random::<u32>())),
         },
         DataType::UInt64 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<u64>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<u64>())),
+            false => Column::new(name, create_values(height, || rng.random::<u64>())),
         },
         DataType::Int8 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i8>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<i8>())),
+            false => Column::new(name, create_values(height, || rng.random::<i8>())),
         },
         DataType::Int16 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i16>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<i16>())),
+            false => Column::new(name, create_values(height, || rng.random::<i16>())),
         },
         DataType::Int32 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i32>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<i32>())),
+            false => Column::new(name, create_values(height, || rng.random::<i32>())),
         },
         DataType::Int64 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<i64>())),
+            false => Column::new(name, create_values(height, || rng.random::<i64>())),
         },
         DataType::Float32 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<f32>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<f32>())),
+            false => Column::new(name, create_values(height, || rng.random::<f32>())),
         },
         DataType::Float64 => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<f64>(rng))),
-            false => Column::new(name, create_values(height, || rng.gen::<f64>())),
+            false => Column::new(name, create_values(height, || rng.random::<f64>())),
         },
         DataType::String => match optional {
             true => Column::new(
@@ -177,7 +177,7 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
                 .cast(&DataType::Datetime(unit, zone))
                 .unwrap(),
-            false => Column::new(name, create_values(height, || rng.gen::<i64>()))
+            false => Column::new(name, create_values(height, || rng.random::<i64>()))
                 .cast(&DataType::Datetime(unit, zone))
                 .unwrap(),
         },
@@ -185,7 +185,7 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             true => Column::new(name, create_values(height, || create_optional_number::<i32>(rng)))
                 .cast(&DataType::Date)
                 .unwrap(),
-            false => Column::new(name, create_values(height, || rng.gen::<i32>()))
+            false => Column::new(name, create_values(height, || rng.random::<i32>()))
                 .cast(&DataType::Date)
                 .unwrap(),
         },
@@ -194,7 +194,7 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 name,
                 create_values(height, || {
                     create_optional(rng, |rng| {
-                        let value: i64 = rng.gen_range(0..TIME64_MAX_VALUE);
+                        let value: i64 = rng.random_range(0..TIME64_MAX_VALUE);
                         value
                     })
                 }),
@@ -204,7 +204,7 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             false => Column::new(
                 name,
                 create_values(height, || {
-                    let value: i64 = rng.gen_range(0..TIME64_MAX_VALUE);
+                    let value: i64 = rng.random_range(0..TIME64_MAX_VALUE);
                     value
                 }),
             )
@@ -215,7 +215,7 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
                 .cast(&DataType::Duration(unit))
                 .unwrap(),
-            false => Column::new(name, create_values(height, || rng.gen::<i64>()))
+            false => Column::new(name, create_values(height, || rng.random::<i64>()))
                 .cast(&DataType::Duration(unit))
                 .unwrap(),
         },
