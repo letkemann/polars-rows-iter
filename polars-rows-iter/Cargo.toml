@@ -10,7 +10,7 @@ keywords.workspace = true
 [dependencies]
 polars.workspace = true
 chrono = { workspace = true, optional = true }
-polars-rows-iter-derive = { path = "../polars-rows-iter-derive" }
+polars-rows-iter-derive.workspace = true
 
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
