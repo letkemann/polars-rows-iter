@@ -12,7 +12,7 @@ keywords = ["polars", "dataframe", "rows", "iterator"]
 
 [workspace.dependencies]
 polars-rows-iter-derive = { version = "=0.9.6", path = "polars-rows-iter-derive" }
-polars = "0.49.1"
+polars = "0.50.0"
 chrono = "0.4.41"
 criterion = { git = "https://github.com/bheisler/criterion.rs.git", rev = "260e2f1" }
 rand = "0.9.1"
