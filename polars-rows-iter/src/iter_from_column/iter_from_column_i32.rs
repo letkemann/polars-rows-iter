@@ -35,7 +35,7 @@ fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = O
     let column_name = column.name().as_str();
     let iter = match column.dtype() {
         DataType::Int32 => Box::new(column.i32()?.iter()),
-        DataType::Date => Box::new(column.date()?.iter()),
+        DataType::Date => Box::new(column.date()?.phys.iter()),
         dtype => {
             return Err(polars_err!(SchemaMismatch: "Cannot get i32 from column '{column_name}' with dtype : {dtype}"))
         }
@@ -55,9 +55,9 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
     use shared_test_helpers::*;
 
-    create_test_for_type!(i32_test, i32, i32, DataType::Int32, ROW_COUNT);
+    create_test_for_chunked_type!(i32_test, i32, i32, DataType::Int32, ROW_COUNT);
 
-    create_test_for_type!(i32_as_date_test, i32, date, DataType::Date, ROW_COUNT);
+    create_test_for_logical_type!(i32_as_date_test, i32, date, DataType::Date, ROW_COUNT);
 
     #[test]
     fn i32_as_time_test() {
@@ -73,11 +73,12 @@ mod tests {
             .unwrap()
             .time()
             .unwrap()
+            .phys
             .iter()
             .map(|v| v.unwrap())
             .collect_vec();
 
-        let col_opt_values = col_opt.as_series().unwrap().time().unwrap().iter().collect_vec();
+        let col_opt_values = col_opt.as_series().unwrap().time().unwrap().phys.iter().collect_vec();
 
         let df = DataFrame::new(vec![col, col_opt]).unwrap();
 

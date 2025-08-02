@@ -102,19 +102,22 @@ mod tests {
     fn cat_test() {
         let mut rng = StdRng::seed_from_u64(0);
         let height = ROW_COUNT;
-        let dtype = DataType::Categorical(None, CategoricalOrdering::Physical);
+
+        let cats = Categories::new(PlSmallStr::EMPTY, PlSmallStr::EMPTY, CategoricalPhysical::U32);
+        let dtype = DataType::from_categories(cats);
 
         let col = create_column("col", dtype.clone(), false, height, &mut rng);
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
         let col_values = col
-            .categorical()
+            .cat::<Categorical32Type>()
             .unwrap()
             .iter_str()
             .map(|v| v.unwrap().to_owned())
             .collect_vec();
+
         let col_opt_values = col_opt
-            .categorical()
+            .cat::<Categorical32Type>()
             .unwrap()
             .iter_str()
             .map(|v| v.map(|s| s.to_owned()))

@@ -48,11 +48,25 @@ fn create_all_column_types_dataframe(height: usize) -> DataFrame {
         ("_col_str_opt", ColumnType(DataType::String, true)),
         (
             "_col_cat",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), false),
+            ColumnType(
+                DataType::from_categories(Categories::new(
+                    PlSmallStr::EMPTY,
+                    PlSmallStr::EMPTY,
+                    CategoricalPhysical::U32,
+                )),
+                false,
+            ),
         ),
         (
             "_col_cat_opt",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), true),
+            ColumnType(
+                DataType::from_categories(Categories::new(
+                    PlSmallStr::EMPTY,
+                    PlSmallStr::EMPTY,
+                    CategoricalPhysical::U32,
+                )),
+                true,
+            ),
         ),
         ("_col_bin", ColumnType(DataType::Binary, false)),
         ("_col_bin_opt", ColumnType(DataType::Binary, true)),
@@ -217,7 +231,14 @@ fn create_mandatory_column_types_dataframe(height: usize) -> DataFrame {
         ("_col_str", ColumnType(DataType::String, false)),
         (
             "_col_cat",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), false),
+            ColumnType(
+                DataType::from_categories(Categories::new(
+                    PlSmallStr::EMPTY,
+                    PlSmallStr::EMPTY,
+                    CategoricalPhysical::U32,
+                )),
+                false,
+            ),
         ),
     ]
     .into_iter()
@@ -283,7 +304,14 @@ fn create_optional_column_types_dataframe(height: usize) -> DataFrame {
         ("_col_str_opt", ColumnType(DataType::String, true)),
         (
             "_col_cat_opt",
-            ColumnType(DataType::Categorical(None, CategoricalOrdering::Physical), true),
+            ColumnType(
+                DataType::from_categories(Categories::new(
+                    PlSmallStr::EMPTY,
+                    PlSmallStr::EMPTY,
+                    CategoricalPhysical::U32,
+                )),
+                true,
+            ),
         ),
     ]
     .into_iter()
@@ -385,8 +413,8 @@ fn iterate_all_types_with_zipped_column_iterators(df: &DataFrame) -> PolarsResul
     let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.iter();
     let col_str_iter = df.column("_col_str")?.str()?.iter();
     let col_str_opt_iter = df.column("_col_str_opt")?.str()?.iter();
-    let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
-    let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
+    let col_cat_iter = df.column("_col_cat")?.cat::<Categorical32Type>()?.iter_str();
+    let col_cat_opt_iter = df.column("_col_cat_opt")?.cat::<Categorical32Type>()?.iter_str();
     let col_bin_iter = df.column("_col_bin")?.binary()?.iter();
     let col_bin_opt_iter = df.column("_col_bin_opt")?.binary()?.iter();
 
@@ -558,7 +586,7 @@ fn iterate_mandatory_types_with_zipped_column_iterators(df: &DataFrame) -> Polar
     let col_f32_iter = df.column("_col_f32")?.f32()?.iter();
     let col_f64_iter = df.column("_col_f64")?.f64()?.iter();
     let col_str_iter = df.column("_col_str")?.str()?.iter();
-    let col_cat_iter = df.column("_col_cat")?.categorical()?.iter_str();
+    let col_cat_iter = df.column("_col_cat")?.cat::<Categorical32Type>()?.iter_str();
 
     let row_iter = izip!(
         col_bool_iter,
@@ -617,7 +645,7 @@ fn iterate_optional_types_with_zipped_column_iterators(df: &DataFrame) -> Polars
     let col_f32_opt_iter = df.column("_col_f32_opt")?.f32()?.iter();
     let col_f64_opt_iter = df.column("_col_f64_opt")?.f64()?.iter();
     let col_str_opt_iter = df.column("_col_str_opt")?.str()?.iter();
-    let col_cat_opt_iter = df.column("_col_cat_opt")?.categorical()?.iter_str();
+    let col_cat_opt_iter = df.column("_col_cat_opt")?.cat::<Categorical32Type>()?.iter_str();
 
     let row_iter = izip!(
         col_bool_opt_iter,

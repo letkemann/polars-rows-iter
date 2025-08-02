@@ -35,9 +35,9 @@ fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = O
     let column_name = column.name().as_str();
     let iter = match column.dtype() {
         DataType::Int64 => Box::new(column.i64()?.iter()),
-        DataType::Time => Box::new(column.as_materialized_series().time()?.iter()),
-        DataType::Datetime(_, _) => Box::new(column.datetime()?.iter()),
-        DataType::Duration(_) => Box::new(column.duration()?.iter()),
+        DataType::Time => Box::new(column.as_materialized_series().time()?.phys.iter()),
+        DataType::Datetime(_, _) => Box::new(column.datetime()?.phys.iter()),
+        DataType::Duration(_) => Box::new(column.duration()?.phys.iter()),
         dtype => {
             return Err(polars_err!(SchemaMismatch: "Cannot get i64 from column '{column_name}' with dtype : {dtype}"))
         }
@@ -57,9 +57,9 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
     use shared_test_helpers::*;
 
-    create_test_for_type!(i64_test, i64, i64, DataType::Int64, ROW_COUNT);
+    create_test_for_chunked_type!(i64_test, i64, i64, DataType::Int64, ROW_COUNT);
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_datetime_milliseconds_test,
         i64,
         datetime,
@@ -67,7 +67,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_datetime_microseconds_test,
         i64,
         datetime,
@@ -75,7 +75,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_datetime_nanoseconds_test,
         i64,
         datetime,
@@ -84,9 +84,9 @@ mod tests {
     );
 
     #[cfg(feature = "dtype-time")]
-    create_test_for_type!(i64_as_time_test, i64, time, DataType::Time, ROW_COUNT);
+    create_test_for_logical_type!(i64_as_time_test, i64, time, DataType::Time, ROW_COUNT);
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_duration_milliseconds_test,
         i64,
         duration,
@@ -94,7 +94,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_duration_microseconds_test,
         i64,
         duration,
@@ -102,7 +102,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_type!(
+    create_test_for_logical_type!(
         i64_as_duration_nanoseconds_test,
         i64,
         duration,

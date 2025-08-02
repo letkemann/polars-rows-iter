@@ -68,25 +68,31 @@ pub fn create_random_binary(rng: &mut StdRng) -> Vec<u8> {
     rng.sample_iter(&Alphanumeric).take(size).collect()
 }
 
-pub fn create_enum_values<'a>(mapping: &'a RevMapping, height: usize, rng: &mut StdRng) -> Vec<&'a str> {
+pub fn create_enum_values<'a>(
+    categories: &'a FrozenCategories,
+    mapping: &'a CategoricalMapping,
+    height: usize,
+    rng: &mut StdRng,
+) -> Vec<&'a str> {
     (0..height)
         .map(|_| {
-            let enum_index = rng.random_range(0..mapping.len() as u32);
-            mapping.get(enum_index)
+            let enum_index = rng.random_range(0..categories.categories().len() as u32);
+            mapping.cat_to_str(enum_index).unwrap()
         })
         .collect()
 }
 
 pub fn create_optional_enum_values<'a>(
-    mapping: &'a RevMapping,
+    categories: &'a FrozenCategories,
+    mapping: &'a CategoricalMapping,
     height: usize,
     rng: &mut StdRng,
 ) -> Vec<Option<&'a str>> {
     (0..height)
-        .map(|_| {
-            let enum_index = rng.random_range(0..mapping.len() as u32);
+        .map(move |_| {
+            let enum_index = rng.random_range(0..categories.categories().len() as u32);
             match rng.random_bool(0.5) {
-                true => Some(mapping.get(enum_index)),
+                true => mapping.cat_to_str(enum_index),
                 false => None,
             }
         })
@@ -159,18 +165,18 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 .cast(&DataType::Categorical(mapping, ordering))
                 .unwrap(),
         },
-        DataType::Enum(mapping, ordering) => match optional {
+        DataType::Enum(categories, mapping) => match optional {
             true => Column::new(
                 name,
-                create_optional_enum_values(mapping.as_ref().unwrap().as_ref(), height, rng),
+                create_optional_enum_values(categories.as_ref(), mapping.as_ref(), height, rng),
             )
-            .cast(&DataType::Enum(mapping, ordering))
+            .cast(&DataType::Enum(categories, mapping))
             .unwrap(),
             false => Column::new(
                 name,
-                create_enum_values(mapping.as_ref().unwrap().as_ref(), height, rng),
+                create_enum_values(categories.as_ref(), mapping.as_ref(), height, rng),
             )
-            .cast(&DataType::Enum(mapping, ordering))
+            .cast(&DataType::Enum(categories, mapping))
             .unwrap(),
         },
         DataType::Datetime(unit, zone) => match optional {
@@ -257,7 +263,7 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
 }
 
 #[macro_export]
-macro_rules! create_test_for_type {
+macro_rules! create_test_for_chunked_type {
     ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
         #[test]
         fn $func_name() {
@@ -282,6 +288,63 @@ macro_rules! create_test_for_type {
                 .unwrap()
                 .$type_name()
                 .unwrap()
+                .iter()
+                .collect_vec();
+
+            let df = DataFrame::new(vec![col, col_opt]).unwrap();
+
+            let col_iter = col_values.iter();
+            let col_opt_iter = col_opt_values.iter();
+
+            let expected_rows = izip!(col_iter, col_opt_iter)
+                .map(|(&col, &col_opt)| TestRow { col, col_opt })
+                .collect_vec();
+
+            #[derive(Debug, FromDataFrameRow, PartialEq)]
+            struct TestRow {
+                col: $type,
+                col_opt: Option<$type>,
+            }
+
+            let rows = df
+                .rows_iter::<TestRow>()
+                .unwrap()
+                .map(|v| v.unwrap())
+                .collect_vec();
+
+            assert_eq!(rows, expected_rows)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! create_test_for_logical_type {
+    ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
+        #[test]
+        fn $func_name() {
+            let mut rng = StdRng::seed_from_u64(0);
+            let height = $height;
+            let dtype = $dtype;
+
+            let col = create_column("col", dtype.clone(), false, height, &mut rng);
+            let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+
+            let col_values = col
+                .as_series()
+                .unwrap()
+                .$type_name()
+                .unwrap()
+                .phys
+                .iter()
+                .map(|v| v.unwrap())
+                .collect_vec();
+
+            let col_opt_values = col_opt
+                .as_series()
+                .unwrap()
+                .$type_name()
+                .unwrap()
+                .phys
                 .iter()
                 .collect_vec();
 
