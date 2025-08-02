@@ -38,14 +38,21 @@ fn create_str_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item
 
 #[cfg(feature = "dtype-categorical")]
 fn create_cat_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
-    Ok(Box::new(column.categorical()?.iter_str()))
+    Ok(Box::new(column.cat32()?.iter_str()))
+}
+
+#[cfg(feature = "dtype-categorical")]
+fn create_enum_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
+    Ok(Box::new(column.cat8()?.iter_str()))
 }
 
 pub fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
     let iter = match column.dtype() {
         DataType::String => create_str_iter(column)?,
         #[cfg(feature = "dtype-categorical")]
-        DataType::Categorical(_, _) | DataType::Enum(_, _) => create_cat_iter(column)?,
+        DataType::Categorical(_, _) => create_cat_iter(column)?,
+        #[cfg(feature = "dtype-categorical")]
+        DataType::Enum(_, _) => create_enum_iter(column)?,
         dtype => {
             let column_name = column.name().as_str();
             return Err(
@@ -113,19 +120,21 @@ mod tests {
     fn cat_test() {
         let mut rng = StdRng::seed_from_u64(0);
         let height = ROW_COUNT;
-        let dtype = DataType::Categorical(None, CategoricalOrdering::Physical);
+
+        let cats = Categories::new(PlSmallStr::EMPTY, PlSmallStr::EMPTY, CategoricalPhysical::U32);
+        let dtype = DataType::from_categories(cats);
 
         let col = create_column("col", dtype.clone(), false, height, &mut rng);
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
         let col_values = col
-            .categorical()
+            .cat32()
             .unwrap()
             .iter_str()
             .map(|v| v.unwrap().to_owned())
             .collect_vec();
         let col_opt_values = col_opt
-            .categorical()
+            .cat32()
             .unwrap()
             .iter_str()
             .map(|v| v.map(|s| s.to_owned()))
@@ -160,21 +169,20 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(0);
         let height = ROW_COUNT;
 
-        let enum_value_series = Series::new("enum".into(), &["A", "B", "C", "D", "E"]);
-        let categories = enum_value_series.str().unwrap().downcast_iter().next().unwrap().clone();
-        let dtype = create_enum_dtype(categories);
+        let categories = FrozenCategories::new(["A", "B", "C", "D", "E"]).unwrap();
+        let dtype = DataType::from_frozen_categories(categories);
 
         let col = create_column("col", dtype.clone(), false, height, &mut rng);
         let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
 
         let col_values = col
-            .categorical()
+            .cat8()
             .unwrap()
             .iter_str()
             .map(|v| v.unwrap().to_owned())
             .collect_vec();
         let col_opt_values = col_opt
-            .categorical()
+            .cat8()
             .unwrap()
             .iter_str()
             .map(|v| v.map(|s| s.to_owned()))
