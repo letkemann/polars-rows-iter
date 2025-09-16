@@ -3,7 +3,7 @@ resolver = "2"
 members = ["polars-rows-iter", "polars-rows-iter-derive"]
 
 [workspace.package]
-version = "0.9.7"
+version = "0.9.8"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/letkemann/polars-rows-iter"
