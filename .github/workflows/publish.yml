@@ -13,9 +13,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build -j 2 --all-targets && cargo build -j 2 --all-features --all-targets
+      run: cargo build -j 2 --all-features --all-targets
     - name: Run tests
-      run: cargo test -j 2 && cargo test -j 2 --all-features
+      run: cargo test -j 2 --all-features
     - name: Publish derive package
       run: cargo publish -j 2 -p polars-rows-iter-derive
       env:
