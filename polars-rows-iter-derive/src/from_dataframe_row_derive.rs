@@ -3,7 +3,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
     punctuated::Punctuated, spanned::Spanned, DeriveInput, Expr, ExprLit, Field, GenericArgument, GenericParam,
-    Generics, Ident, Lifetime, LifetimeParam, LitStr, PathArguments, Token, Type, TypeReference,
+    Generics, Ident, Lifetime, LifetimeParam, LitStr, PathArguments, Token, Type, TypeParam, TypeReference,
+    WhereClause, WherePredicate,
 };
 
 const ROW_ITERATOR_NAME: &str = "RowsIterator";
@@ -25,6 +26,7 @@ struct Context {
     iter_struct_ident: Ident,
     fields_list: Vec<FieldInfo>,
     has_lifetime: bool,
+    type_generics: Vec<TypeParam>,
 }
 
 pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
@@ -33,10 +35,6 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         syn::Data::Enum(_) => panic!("Enums not supported"),
         syn::Data::Union(_) => panic!("Unions not supported"),
     };
-
-    if ast.generics.type_params().count() > 0 {
-        panic!("Generic types in row structs are currently not supported!")
-    }
 
     let struct_ident = ast.ident.clone();
     let struct_ident_str = struct_ident.to_string();
@@ -67,13 +65,14 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         iter_struct_ident,
         fields_list,
         has_lifetime,
+        type_generics: ast.generics.type_params().cloned().collect(),
     };
 
     let builder_struct = create_builder_struct(&ctx);
     let builder_struct_impl = create_builder_struct_impl(&ctx);
     let builder_struct_column_name_builder_impl = create_builder_struct_column_name_builder_impl(&ctx);
-    let row_struct_impl = create_row_struct_impl(&ctx, &ast.generics);
-    let from_dataframe_row_trait_impl = create_from_dataframe_row_trait_impl(&ctx, &ast.generics);
+    let row_struct_impl = create_row_struct_impl(&ctx);
+    let from_dataframe_row_trait_impl = create_from_dataframe_row_trait_impl(&ctx);
     let iterator_struct = create_iterator_struct(&ctx);
     let iterator_struct_impl = create_iterator_struct_impl(&ctx);
     let iterator_impl_for_iterator_struct = create_iterator_impl_for_iterator_struct(&ctx);
@@ -104,9 +103,10 @@ fn create_lifetime_param(name: &str) -> LifetimeParam {
     }
 }
 
-fn create_impl_generics(struct_generics: &Generics, lifetime: &LifetimeParam) -> Generics {
-    let generics = struct_generics
-        .type_params()
+fn create_impl_generics(ctx: &Context, lifetime: &LifetimeParam) -> Generics {
+    let generics = ctx
+        .type_generics
+        .iter()
         .map(|p| GenericParam::Type(p.clone()))
         .chain(std::iter::once(GenericParam::Lifetime(lifetime.clone())));
 
@@ -116,6 +116,47 @@ fn create_impl_generics(struct_generics: &Generics, lifetime: &LifetimeParam) ->
         gt_token: Some(Token![>](Span::call_site())),
         where_clause: None,
     }
+}
+
+fn create_struct_generics(ctx: &Context, lifetime: Option<&LifetimeParam>) -> Generics {
+    let generics = lifetime
+        .map(|ltp| GenericParam::Lifetime(ltp.clone()))
+        .into_iter()
+        .chain(ctx.type_generics.iter().map(|tp| GenericParam::Type(tp.clone())))
+        .collect_vec();
+
+    Generics {
+        lt_token: Some(Token![<](Span::call_site())),
+        params: Punctuated::from_iter(generics),
+        gt_token: Some(Token![>](Span::call_site())),
+        where_clause: None,
+    }
+}
+
+fn create_where_clause(ctx: &Context, ltp: &LifetimeParam, with_lifetime: bool) -> Option<WhereClause> {
+    if ctx.type_generics.is_empty() {
+        return None;
+    }
+
+    Some(WhereClause {
+        where_token: Token![where](Span::call_site()),
+        predicates: Punctuated::from_iter(
+            ctx.type_generics
+                .iter()
+                .map(|tp| create_where_predicate(tp, ltp, with_lifetime)),
+        ),
+    })
+}
+
+fn create_where_predicate(tp: &TypeParam, ltp: &LifetimeParam, with_lifetime: bool) -> WherePredicate {
+    let tp_ident = &tp.ident;
+
+    let stream = match with_lifetime {
+        true => quote! { #tp_ident : IterFromColumn<#ltp> + #ltp },
+        false => quote! { #tp_ident : IterFromColumn<#ltp> },
+    };
+
+    syn::parse2(stream).unwrap()
 }
 
 fn create_builder_struct(ctx: &Context) -> proc_macro2::TokenStream {
@@ -166,20 +207,19 @@ fn create_builder_struct_column_name_builder_impl(ctx: &Context) -> proc_macro2:
     }
 }
 
-fn create_row_struct_impl(ctx: &Context, generics: &Generics) -> proc_macro2::TokenStream {
+fn create_row_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let lifetime = create_lifetime_param("a");
     let struct_ident = &ctx.struct_ident;
-    let struct_ident = match ctx.has_lifetime {
-        true => quote! { #struct_ident<#lifetime> },
-        false => quote! { #struct_ident },
-    };
-    let impl_generics = create_impl_generics(generics, &lifetime);
+
+    let impl_generics = create_impl_generics(ctx, &lifetime);
+    let struct_generics = create_struct_generics(ctx, ctx.has_lifetime.then_some(&lifetime));
+    let where_clause = create_where_clause(ctx, &lifetime, false);
 
     let column_name_expr_list = ctx.fields_list.iter().map(|f| &f.column_name_expr).collect_vec();
 
-    quote::quote! {
+    let stream = quote::quote! {
         #[automatically_derived]
-        impl #impl_generics #struct_ident {
+        impl #impl_generics #struct_ident #struct_generics #where_clause{
             fn get_column_names() -> Vec<&'static str>
                 where
                     Self: Sized
@@ -187,10 +227,12 @@ fn create_row_struct_impl(ctx: &Context, generics: &Generics) -> proc_macro2::To
                 vec![#(#column_name_expr_list,)*]
             }
         }
-    }
+    };
+
+    stream
 }
 
-fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> proc_macro2::TokenStream {
+fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let lifetime = create_lifetime_param("a");
 
     let columns_param_ident = Ident::new("columns", Span::call_site());
@@ -202,7 +244,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
         where_clause: None,
     };
 
-    let impl_generics = create_impl_generics(generics, &lifetime);
+    let impl_generics = create_impl_generics(ctx, &lifetime);
 
     let iter_create_list = ctx.fields_list.iter().map(|f| {
         let field_name = f.ident.to_string();
@@ -212,12 +254,15 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
         let field_type = remove_lifetime(f.inner_ty.clone());
         quote! {
             let column_name = #columns_param_ident.remove(#field_name);
-            let column_name = column_name.as_ref().map(|cn| cn.as_str());
+            let column_name = column_name.as_deref();
             let column = dataframe.column(column_name.unwrap_or(#column_name))?;
             let #ident_iter = <#field_type as IterFromColumn<#lifetime>>::create_iter(column)?;
             let #ident_dtype = column.dtype().clone();
         }
     });
+
+    let struct_generics = create_struct_generics(ctx, ctx.has_lifetime.then_some(&lifetime));
+    let where_clause = create_where_clause(ctx, &lifetime, true);
 
     let struct_ident = &ctx.struct_ident;
     let iter_struct_ident = &ctx.iter_struct_ident;
@@ -227,10 +272,10 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
         quote! { #ident_iter, #ident_dtype }
     });
 
-    let struct_ident = match ctx.has_lifetime {
-        true => quote! { #struct_ident<#lifetime> },
-        false => quote! { #struct_ident },
-    };
+    // let struct_ident = match ctx.has_lifetime {
+    //     true => quote! { #struct_ident<#lifetime> },
+    //     false => quote! { #struct_ident },
+    // };
 
     let iter_struct_ident = match ctx.has_lifetime {
         true => quote! { #iter_struct_ident::<#lifetime> },
@@ -241,7 +286,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context, generics: &Generics) -> p
 
     quote::quote! {
         #[automatically_derived]
-        impl #impl_generics FromDataFrameRow #lifetime_generics for #struct_ident {
+        impl #impl_generics FromDataFrameRow #lifetime_generics for #struct_ident #struct_generics #where_clause{
             type Builder = #builder_struct_ident;
             fn from_dataframe(
                 dataframe: & #lifetime polars::prelude::DataFrame,
@@ -346,9 +391,12 @@ fn create_iterator_struct(ctx: &Context) -> proc_macro2::TokenStream {
 
     let iter_struct_ident = &ctx.iter_struct_ident;
 
+    let struct_generics = create_struct_generics(ctx, Some(&lifetime));
+    let where_clause = create_where_clause(ctx, &lifetime, false);
+
     quote! {
         #[automatically_derived]
-        struct #iter_struct_ident <#lifetime> {
+        struct #iter_struct_ident #struct_generics #where_clause {
             #(#fields)*
         }
     }
@@ -378,19 +426,19 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let struct_ident = &ctx.struct_ident;
     let iter_struct_ident = &ctx.iter_struct_ident;
 
-    let struct_ident_with_lifetime_if_nec = match ctx.has_lifetime {
-        true => quote! { #struct_ident<#lifetime> },
-        false => quote! { #struct_ident },
-    };
+    let impl_generics = create_impl_generics(ctx, &lifetime);
+    let struct_generics = create_struct_generics(ctx, Some(&lifetime));
+    let type_generics = create_struct_generics(ctx, ctx.has_lifetime.then_some(&lifetime));
+    let where_clause = create_where_clause(ctx, &lifetime, false);
 
     quote! {
         #[automatically_derived]
-        impl<#lifetime> #iter_struct_ident <#lifetime> {
+        impl #impl_generics #iter_struct_ident #struct_generics #where_clause {
             #[allow(clippy::too_many_arguments)]
             fn create(
                 &self,
                 #(#fn_params,)*
-            ) -> polars::prelude::PolarsResult<#struct_ident_with_lifetime_if_nec> {
+            ) -> polars::prelude::PolarsResult<#struct_ident #type_generics> {
 
                 Ok(#struct_ident {
                     #(#assignments,)*
@@ -447,14 +495,14 @@ fn create_iterator_impl_for_iterator_struct(ctx: &Context) -> proc_macro2::Token
     let struct_ident = &ctx.struct_ident;
     let iter_struct_ident = &ctx.iter_struct_ident;
 
-    let struct_ident = match ctx.has_lifetime {
-        true => quote! { #struct_ident<#lifetime> },
-        false => quote! { #struct_ident },
-    };
+    let impl_generics = create_impl_generics(ctx, &lifetime);
+    let struct_generics = create_struct_generics(ctx, Some(&lifetime));
+    let type_generics = create_struct_generics(ctx, ctx.has_lifetime.then_some(&lifetime));
+    let where_clause = create_where_clause(ctx, &lifetime, false);
 
     quote! {
-        impl<#lifetime> Iterator for #iter_struct_ident<#lifetime> {
-            type Item = polars::prelude::PolarsResult<#struct_ident>;
+        impl #impl_generics Iterator for #iter_struct_ident #struct_generics #where_clause {
+            type Item = polars::prelude::PolarsResult<#struct_ident #type_generics>;
 
             fn next(&mut self) -> Option<Self::Item> {
                 #(#next_value_list;)*

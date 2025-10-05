@@ -88,9 +88,6 @@
 //! TODO: Support is planned <br>
 //! ?: Support not yet certain<br>
 //! X: No Support
-//!
-//! ## Limitations
-//! * No generics in row structs supported
 
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
