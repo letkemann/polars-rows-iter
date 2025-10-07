@@ -55,9 +55,9 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
     use shared_test_helpers::*;
 
-    create_test_for_chunked_type!(i32_test, i32, i32, DataType::Int32, ROW_COUNT);
+    create_rows_iter_test_for_chunked_type!(i32_test, i32, i32, DataType::Int32, ROW_COUNT);
 
-    create_test_for_logical_type!(i32_as_date_test, i32, date, DataType::Date, ROW_COUNT);
+    create_rows_iter_test_for_logical_type!(i32_as_date_test, i32, date, DataType::Date, ROW_COUNT);
 
     #[test]
     fn i32_as_time_test() {

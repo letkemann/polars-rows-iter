@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use polars::prelude::*;
 
-use crate::{ColumnNameBuilder, FromDataFrameRow};
+use crate::{ColumnNameBuilder, FromDataFrameRow, IterFromColumn};
 
 pub trait DataframeRowsIterExt<'a> {
     fn rows_iter<T>(&'a self) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
@@ -15,6 +15,10 @@ pub trait DataframeRowsIterExt<'a> {
     ) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
     where
         T: FromDataFrameRow<'a>;
+
+    fn scalar_iter<T>(&'a self, column_name: &'a str) -> PolarsResult<impl Iterator<Item = PolarsResult<T>> + 'a>
+    where
+        T: IterFromColumn<'a> + 'a;
 }
 
 impl<'a> DataframeRowsIterExt<'a> for DataFrame {
@@ -129,6 +133,19 @@ impl<'a> DataframeRowsIterExt<'a> for DataFrame {
         let columns = builder.build();
 
         T::from_dataframe(self, columns)
+    }
+
+    fn scalar_iter<T>(&'a self, column_name: &'a str) -> PolarsResult<impl Iterator<Item = PolarsResult<T>> + 'a>
+    where
+        T: IterFromColumn<'a> + 'a,
+    {
+        let column = self.column(column_name)?;
+        let column_dtype = column.dtype();
+
+        let iter = <T as IterFromColumn<'a>>::create_iter(column)?;
+        let iter = iter.map(|v| <T as IterFromColumn<'a>>::get_value(v, column_name, column_dtype));
+
+        Ok(iter)
     }
 }
 
