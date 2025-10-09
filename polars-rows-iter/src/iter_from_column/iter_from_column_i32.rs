@@ -65,8 +65,8 @@ mod tests {
         let height = 64;
         let dtype = DataType::Time;
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col
             .as_series()

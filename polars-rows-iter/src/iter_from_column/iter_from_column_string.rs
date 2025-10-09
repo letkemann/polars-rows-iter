@@ -51,8 +51,8 @@ mod tests {
         let height = ROW_COUNT;
         let dtype = DataType::String;
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col.str().unwrap().iter().map(|v| v.unwrap().to_owned()).collect_vec();
         let col_opt_values = col_opt
@@ -139,8 +139,8 @@ mod tests {
         let cats = Categories::new(PlSmallStr::EMPTY, PlSmallStr::EMPTY, CategoricalPhysical::U32);
         let dtype = DataType::from_categories(cats);
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col
             .cat::<Categorical32Type>()
@@ -248,8 +248,8 @@ mod tests {
 
         println!("{dtype:?}");
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col
             .cat8()

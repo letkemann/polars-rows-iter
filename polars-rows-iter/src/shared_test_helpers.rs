@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use polars::prelude::*;
 use rand::{
     distr::{Alphanumeric, Distribution, StandardUniform},
@@ -99,7 +100,7 @@ pub fn create_optional_enum_values<'a>(
         .collect()
 }
 
-pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: usize, rng: &mut StdRng) -> Column {
+pub fn create_column(name: &str, dtype: &DataType, optional: IsOptional, height: usize, rng: &mut StdRng) -> Column {
     // println!("Creating column {name} with type {dtype} (optional: {optional})");
     let name = name.into();
     match dtype {
@@ -159,10 +160,10 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 name,
                 create_values(height, || create_optional(rng, create_random_string)),
             )
-            .cast(&DataType::Categorical(mapping, ordering))
+            .cast(&DataType::Categorical(mapping.clone(), ordering.clone()))
             .unwrap(),
             false => Column::new(name, create_values(height, || create_random_string(rng)))
-                .cast(&DataType::Categorical(mapping, ordering))
+                .cast(&DataType::Categorical(mapping.clone(), ordering.clone()))
                 .unwrap(),
         },
         DataType::Enum(categories, mapping) => match optional {
@@ -170,21 +171,21 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 name,
                 create_optional_enum_values(categories.as_ref(), mapping.as_ref(), height, rng),
             )
-            .cast(&DataType::Enum(categories, mapping))
+            .cast(&DataType::Enum(categories.clone(), mapping.clone()))
             .unwrap(),
             false => Column::new(
                 name,
                 create_enum_values(categories.as_ref(), mapping.as_ref(), height, rng),
             )
-            .cast(&DataType::Enum(categories, mapping))
+            .cast(&DataType::Enum(categories.clone(), mapping.clone()))
             .unwrap(),
         },
         DataType::Datetime(unit, zone) => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
-                .cast(&DataType::Datetime(unit, zone))
+                .cast(&DataType::Datetime(*unit, zone.clone()))
                 .unwrap(),
             false => Column::new(name, create_values(height, || rng.random::<i64>()))
-                .cast(&DataType::Datetime(unit, zone))
+                .cast(&DataType::Datetime(*unit, zone.clone()))
                 .unwrap(),
         },
         DataType::Date => match optional {
@@ -219,10 +220,10 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
         },
         DataType::Duration(unit) => match optional {
             true => Column::new(name, create_values(height, || create_optional_number::<i64>(rng)))
-                .cast(&DataType::Duration(unit))
+                .cast(&DataType::Duration(*unit))
                 .unwrap(),
             false => Column::new(name, create_values(height, || rng.random::<i64>()))
-                .cast(&DataType::Duration(unit))
+                .cast(&DataType::Duration(*unit))
                 .unwrap(),
         },
         DataType::Binary => match optional {
@@ -248,6 +249,35 @@ pub fn create_column(name: &str, dtype: DataType, optional: IsOptional, height: 
                 BinaryOffsetChunked::from(values).into_column().with_name(name)
             }
         },
+        DataType::List(dtype) => {
+            if optional {
+                let series = (0..height)
+                    .map(|_| {
+                        if rng.random_bool(0.5) {
+                            Some(
+                                create_column("", dtype.as_ref(), optional, height, rng)
+                                    .as_materialized_series()
+                                    .clone(),
+                            )
+                        } else {
+                            None
+                        }
+                    })
+                    .collect_vec();
+
+                Column::new(name, series)
+            } else {
+                let series = (0..height)
+                    .map(|_| {
+                        create_column("", dtype.as_ref(), optional, height, rng)
+                            .as_materialized_series()
+                            .clone()
+                    })
+                    .collect_vec();
+
+                Column::new(name, series)
+            }
+        }
         _ => todo!(),
     }
 }
@@ -256,7 +286,7 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
     let mut rng = StdRng::seed_from_u64(0);
     let columns = columns
         .into_iter()
-        .map(|(name, ColumnType(dtype, optional))| create_column(name, dtype, optional, height, &mut rng))
+        .map(|(name, ColumnType(dtype, optional))| create_column(name, dtype.as_ref(), optional, height, &mut rng))
         .collect::<Vec<Column>>();
 
     DataFrame::new(columns).unwrap()
@@ -271,8 +301,8 @@ macro_rules! create_rows_iter_test_for_chunked_type {
             let height = $height;
             let dtype = $dtype;
 
-            let col = create_column("col", dtype.clone(), false, height, &mut rng);
-            let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+            let col = create_column("col", &dtype, false, height, &mut rng);
+            let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
             let col_values = col
                 .as_series()
@@ -326,8 +356,8 @@ macro_rules! create_rows_iter_test_for_logical_type {
             let height = $height;
             let dtype = $dtype;
 
-            let col = create_column("col", dtype.clone(), false, height, &mut rng);
-            let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+            let col = create_column("col", &dtype, false, height, &mut rng);
+            let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
             let col_values = col
                 .as_series()
