@@ -61,8 +61,8 @@ mod tests {
         let height = ROW_COUNT;
         let dtype = DataType::Binary;
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col.clone();
         let col_values = col_values.binary().unwrap().iter().map(|v| v.unwrap()).collect_vec();
@@ -96,8 +96,8 @@ mod tests {
         let height = ROW_COUNT;
         let dtype = DataType::BinaryOffset;
 
-        let col = create_column("col", dtype.clone(), false, height, &mut rng);
-        let col_opt = create_column("col_opt", dtype, true, height, &mut rng);
+        let col = create_column("col", &dtype, false, height, &mut rng);
+        let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
         let col_values = col.clone();
         let col_values = col_values

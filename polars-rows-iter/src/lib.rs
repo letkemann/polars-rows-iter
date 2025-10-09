@@ -74,10 +74,10 @@
 //! |✓|`String`|`Enum(..)`|`dtype-categorical`
 //! |✓|`&[u8]`|`Binary`
 //! |✓|`&[u8]`|`BinaryOffset`
-//! |✓|`Series`|`List(..)`
 //! |✓|`chrono::NaiveDateTime`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::DateTime<Utc>`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::Date`|`Date`|`chrono`|
+//! |?|?|`List(..)`
 //! |?|?|`Array(..)`|
 //! |?|?|`Decimal(..)`|
 //! |?|?|`Struct(..)`|
