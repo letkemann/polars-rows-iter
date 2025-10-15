@@ -57,9 +57,9 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
     use shared_test_helpers::*;
 
-    create_test_for_chunked_type!(i64_test, i64, i64, DataType::Int64, ROW_COUNT);
+    create_rows_iter_test_for_chunked_type!(i64_test, i64, i64, DataType::Int64, ROW_COUNT);
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_datetime_milliseconds_test,
         i64,
         datetime,
@@ -67,7 +67,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_datetime_microseconds_test,
         i64,
         datetime,
@@ -75,7 +75,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_datetime_nanoseconds_test,
         i64,
         datetime,
@@ -84,9 +84,9 @@ mod tests {
     );
 
     #[cfg(feature = "dtype-time")]
-    create_test_for_logical_type!(i64_as_time_test, i64, time, DataType::Time, ROW_COUNT);
+    create_rows_iter_test_for_logical_type!(i64_as_time_test, i64, time, DataType::Time, ROW_COUNT);
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_duration_milliseconds_test,
         i64,
         duration,
@@ -94,7 +94,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_duration_microseconds_test,
         i64,
         duration,
@@ -102,7 +102,7 @@ mod tests {
         ROW_COUNT
     );
 
-    create_test_for_logical_type!(
+    create_rows_iter_test_for_logical_type!(
         i64_as_duration_nanoseconds_test,
         i64,
         duration,

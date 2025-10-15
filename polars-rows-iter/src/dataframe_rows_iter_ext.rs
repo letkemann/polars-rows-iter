@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use polars::prelude::*;
 
-use crate::{ColumnNameBuilder, FromDataFrameRow};
+use crate::{ColumnNameBuilder, FromDataFrameRow, IterFromColumn};
 
 pub trait DataframeRowsIterExt<'a> {
     fn rows_iter<T>(&'a self) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
@@ -15,6 +15,10 @@ pub trait DataframeRowsIterExt<'a> {
     ) -> PolarsResult<Box<dyn Iterator<Item = PolarsResult<T>> + 'a>>
     where
         T: FromDataFrameRow<'a>;
+
+    fn scalar_iter<T>(&'a self, column_name: &'a str) -> PolarsResult<impl Iterator<Item = PolarsResult<T>> + 'a>
+    where
+        T: IterFromColumn<'a> + 'a;
 }
 
 impl<'a> DataframeRowsIterExt<'a> for DataFrame {
@@ -129,6 +133,58 @@ impl<'a> DataframeRowsIterExt<'a> for DataFrame {
         let columns = builder.build();
 
         T::from_dataframe(self, columns)
+    }
+
+    /// Creates an iterator for a single column in the DataFrame
+    ///
+    /// This is a simpler alternative to `rows_iter` when you only need to iterate over one column.
+    /// The type parameter `T` specifies the Rust type to convert column values to.
+    ///
+    /// ```rust
+    /// use polars::prelude::*;
+    /// use polars_rows_iter::*;
+    ///
+    /// let df = df!(
+    ///     "col_a" => [1i32, 2, 3, 4, 5],
+    ///     "col_b" => ["a", "b", "c", "d", "e"],
+    ///     "col_c" => [Some("A"), Some("B"), None, None, Some("E")],
+    /// ).unwrap();
+    ///
+    /// // Iterate over a column with non-nullable values
+    /// let values_a = df.scalar_iter::<i32>("col_a")
+    ///     .unwrap()
+    ///     .collect::<PolarsResult<Vec<i32>>>()
+    ///     .unwrap();
+    /// assert_eq!(values_a, [1, 2, 3, 4, 5]);
+    ///
+    /// // Iterate over a column with borrowed string values
+    /// let values_b = df.scalar_iter::<&str>("col_b")
+    ///     .unwrap()
+    ///     .collect::<PolarsResult<Vec<&str>>>()
+    ///     .unwrap();
+    /// assert_eq!(values_b, ["a", "b", "c", "d", "e"]);
+    ///
+    /// // Iterate over a column with optional values
+    /// let values_c = df.scalar_iter::<Option<String>>("col_c")
+    ///     .unwrap()
+    ///     .collect::<PolarsResult<Vec<Option<String>>>>()
+    ///     .unwrap();
+    /// assert_eq!(
+    ///     values_c,
+    ///     [Some("A".to_string()), Some("B".to_string()), None, None, Some("E".to_string())]
+    /// );
+    /// ```
+    fn scalar_iter<T>(&'a self, column_name: &'a str) -> PolarsResult<impl Iterator<Item = PolarsResult<T>> + 'a>
+    where
+        T: IterFromColumn<'a> + 'a,
+    {
+        let column = self.column(column_name)?;
+        let column_dtype = column.dtype();
+
+        let iter = <T as IterFromColumn<'a>>::create_iter(column)?;
+        let iter = iter.map(|v| <T as IterFromColumn<'a>>::get_value(v, column_name, column_dtype));
+
+        Ok(iter)
     }
 }
 

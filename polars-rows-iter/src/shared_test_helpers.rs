@@ -293,7 +293,7 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
 }
 
 #[macro_export]
-macro_rules! create_test_for_chunked_type {
+macro_rules! create_rows_iter_test_for_chunked_type {
     ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
         #[test]
         fn $func_name() {
@@ -348,7 +348,7 @@ macro_rules! create_test_for_chunked_type {
 }
 
 #[macro_export]
-macro_rules! create_test_for_logical_type {
+macro_rules! create_rows_iter_test_for_logical_type {
     ($func_name:ident, $type:ty, $type_name:ident, $dtype:expr, $height:ident) => {
         #[test]
         fn $func_name() {
