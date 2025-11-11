@@ -1,13 +1,16 @@
 use polars::df;
 use polars_rows_iter::*;
 
+const COLUMN: &str = "ColZ";
+
 #[derive(Debug, FromDataFrameRow)]
+#[from_dataframe(convert_case(Snake), prefix("test"))]
 struct DataRow0<'a, T1, T2> {
-    #[column("col_x")]
+    #[column("col x")]
     _x: T1,
-    #[column("col_y")]
+    #[column("col-y")]
     _y: T2,
-    #[column("col_z")]
+    #[column(COLUMN)]
     _z: &'a str,
 }
 

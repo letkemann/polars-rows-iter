@@ -2,13 +2,16 @@
 //!
 //! This crate exports the macros required by the main polars-rows-iter crate.
 
+mod from_dataframe_attribute;
 mod from_dataframe_row_derive;
 mod impl_iter_from_column_for_type;
 
-#[proc_macro_derive(FromDataFrameRow, attributes(column))]
+#[proc_macro_derive(FromDataFrameRow, attributes(column, from_dataframe))]
 pub fn from_dataframe_row_derive_macro(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast: syn::DeriveInput = syn::parse2(input.into()).unwrap();
-    from_dataframe_row_derive::from_dataframe_row_derive_impl(ast).into()
+    from_dataframe_row_derive::from_dataframe_row_derive_impl(ast)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro]

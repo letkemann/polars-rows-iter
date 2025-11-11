@@ -11,12 +11,12 @@ keywords.workspace = true
 polars.workspace = true
 chrono = { workspace = true, optional = true }
 polars-rows-iter-derive.workspace = true
-
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
 criterion.workspace = true
 rand.workspace = true
 itertools.workspace = true
+convert_case.workspace = true
 
 [features]
 default = []

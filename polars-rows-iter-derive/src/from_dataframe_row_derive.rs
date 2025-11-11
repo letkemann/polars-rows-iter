@@ -7,6 +7,8 @@ use syn::{
     WhereClause, WherePredicate,
 };
 
+use crate::from_dataframe_attribute::FromDataFrameAttribute;
+
 const ROW_ITERATOR_NAME: &str = "RowsIterator";
 
 #[derive(Debug)]
@@ -27,9 +29,12 @@ struct Context {
     fields_list: Vec<FieldInfo>,
     has_lifetime: bool,
     type_generics: Vec<TypeParam>,
+    attributes: FromDataFrameAttribute,
 }
 
-pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
+pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> syn::Result<TokenStream> {
+    let attributes = FromDataFrameAttribute::from_ast(&ast)?;
+
     let struct_data = match &ast.data {
         syn::Data::Struct(data_struct) => data_struct,
         syn::Data::Enum(_) => panic!("Enums not supported"),
@@ -66,6 +71,7 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         fields_list,
         has_lifetime,
         type_generics: ast.generics.type_params().cloned().collect(),
+        attributes,
     };
 
     let builder_struct = create_builder_struct(&ctx);
@@ -88,7 +94,7 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> TokenStream {
         #iterator_impl_for_iterator_struct
     };
 
-    stream
+    Ok(stream)
 }
 
 fn create_lifetime_param(name: &str) -> LifetimeParam {
@@ -235,8 +241,6 @@ fn create_row_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
 fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let lifetime = create_lifetime_param("a");
 
-    let columns_param_ident = Ident::new("columns", Span::call_site());
-
     let lifetime_generics = Generics {
         lt_token: Some(Token![<](Span::call_site())),
         params: Punctuated::from_iter([GenericParam::Lifetime(lifetime.clone())]),
@@ -250,12 +254,25 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
         let field_name = f.ident.to_string();
         let ident_iter = &f.iter_ident;
         let ident_dtype = &f.dtype_ident;
-        let column_name = &f.column_name_expr;
+
+        let default_column_name_expr = &f.column_name_expr;
+        let default_column_name = if let Some(case) = ctx.attributes.convert_case.as_ref() {
+            quote! {
+                let default_column_name = #default_column_name_expr.to_case(Case::#case);
+                let default_column_name = default_column_name.as_str();
+            }
+        } else {
+            quote! {
+                let default_column_name = #default_column_name_expr;
+            }
+        };
         let field_type = remove_lifetime(f.inner_ty.clone());
         quote! {
-            let column_name = #columns_param_ident.remove(#field_name);
+
+            let column_name = columns.remove(#field_name);
             let column_name = column_name.as_deref();
-            let column = dataframe.column(column_name.unwrap_or(#column_name))?;
+            #default_column_name
+            let column = dataframe.column(column_name.unwrap_or(default_column_name))?;
             let #ident_iter = <#field_type as IterFromColumn<#lifetime>>::create_iter(column)?;
             let #ident_dtype = column.dtype().clone();
         }
@@ -290,11 +307,13 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
             type Builder = #builder_struct_ident;
             fn from_dataframe(
                 dataframe: & #lifetime polars::prelude::DataFrame,
-                mut #columns_param_ident: std::collections::HashMap<&'static str, String>
+                mut columns: std::collections::HashMap<&'static str, String>
             ) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = polars::prelude::PolarsResult<Self>> + #lifetime>>
                 where
                     Self: Sized
             {
+                use convert_case::{Case, Casing};
+
                 #(#iter_create_list)*
 
                 Ok(Box::new(#iter_struct_ident { #(#iter_ident_list,)* }))
