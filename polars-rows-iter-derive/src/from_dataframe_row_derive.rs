@@ -1,3 +1,4 @@
+use crate::{context::Context, field_info::FieldInfo, from_dataframe_attribute::FromDataFrameAttribute};
 use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -7,30 +8,7 @@ use syn::{
     WhereClause, WherePredicate,
 };
 
-use crate::from_dataframe_attribute::FromDataFrameAttribute;
-
 const ROW_ITERATOR_NAME: &str = "RowsIterator";
-
-#[derive(Debug)]
-struct FieldInfo {
-    pub name: String,
-    pub ident: Ident,
-    pub dtype_ident: Ident,
-    pub iter_ident: Ident,
-    pub inner_ty: Type,
-    pub is_optional: bool,
-    pub column_name_expr: Expr,
-}
-
-struct Context {
-    struct_ident: Ident,
-    builder_struct_ident: Ident,
-    iter_struct_ident: Ident,
-    fields_list: Vec<FieldInfo>,
-    has_lifetime: bool,
-    type_generics: Vec<TypeParam>,
-    attributes: FromDataFrameAttribute,
-}
 
 pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> syn::Result<TokenStream> {
     let attributes = FromDataFrameAttribute::from_ast(&ast)?;
@@ -255,17 +233,8 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
         let ident_iter = &f.iter_ident;
         let ident_dtype = &f.dtype_ident;
 
-        let default_column_name_expr = &f.column_name_expr;
-        let default_column_name = if let Some(case) = ctx.attributes.convert_case.as_ref() {
-            quote! {
-                let default_column_name = #default_column_name_expr.to_case(Case::#case);
-                let default_column_name = default_column_name.as_str();
-            }
-        } else {
-            quote! {
-                let default_column_name = #default_column_name_expr;
-            }
-        };
+        let default_column_name = f.create_default_column_name(ctx);
+
         let field_type = remove_lifetime(f.inner_ty.clone());
         quote! {
 

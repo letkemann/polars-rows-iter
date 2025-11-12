@@ -4,7 +4,7 @@ use polars_rows_iter::*;
 const COLUMN: &str = "ColZ";
 
 #[derive(Debug, FromDataFrameRow)]
-#[from_dataframe(convert_case(Snake), prefix("test"))]
+#[from_dataframe(convert_case(Snake), prefix("test"), postfix("test2"))]
 struct DataRow0<'a, T1, T2> {
     #[column("col x")]
     _x: T1,

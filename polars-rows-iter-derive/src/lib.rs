@@ -2,6 +2,8 @@
 //!
 //! This crate exports the macros required by the main polars-rows-iter crate.
 
+mod context;
+mod field_info;
 mod from_dataframe_attribute;
 mod from_dataframe_row_derive;
 mod impl_iter_from_column_for_type;
