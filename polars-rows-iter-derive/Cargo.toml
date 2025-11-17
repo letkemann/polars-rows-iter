@@ -15,3 +15,4 @@ quote.workspace = true
 syn.workspace = true
 deluxe.workspace = true
 itertools.workspace = true
+convert_case.workspace = true

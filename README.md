@@ -21,18 +21,18 @@ fn main() {
         #[column("col_d")]
         optional: Option<f64>
     }
-   
+
     let df = df!(
             "col_a" => [1i32, 2, 3, 4, 5],
             "col_b" => ["a", "b", "c", "d", "e"],
             "col_c" => ["A", "B", "C", "D", "E"],
             "col_d" => [Some(1.0f64), None, None, Some(2.0), Some(3.0)]
         ).unwrap();
-   
+
     let rows_iter = df.rows_iter::<MyRow>().unwrap(); // ready to use row iterator
     // collect to vector for assert_eq
     let rows_vec = rows_iter.collect::<PolarsResult<Vec<MyRow>>>().unwrap();
-   
+
     assert_eq!(
         rows_vec,
         [
@@ -105,5 +105,39 @@ fn main() {
 }
 ```
 
-### Todos
-- Document how to extend for custom types
+### Example with column name transformations:
+
+You can use attributes to automatically transform field names to match your DataFrame's column naming conventions:
+
+```rust
+use polars::prelude::*;
+use polars_rows_iter::*;
+
+fn main() {
+    // Transformations are applied in order:
+    // 1. prefix("api_"): adds "api_" before field name
+    // 2. convert_case(Pascal): converts snake_case to PascalCase
+    // 3. postfix("_field"): adds "_field" after field name
+    //
+    // So field "user_name" becomes column "api_UserName_field"
+    #[derive(Debug, FromDataFrameRow)]
+    #[from_dataframe(prefix("api_"), convert_case(Pascal), postfix("_field"))]
+    struct ApiRow<'a> {
+        user_id: i32,
+        user_name: &'a str,
+        is_active: bool,
+    }
+
+    let df = df!(
+        "api_UserId_field" => [1i32, 2, 3],
+        "api_UserName_field" => ["Alice", "Bob", "Charlie"],
+        "api_IsActive_field" => [true, false, true]
+    ).unwrap();
+
+    for row in df.rows_iter::<ApiRow>().unwrap() {
+        println!("{:?}", row.unwrap());
+    }
+}
+```
+
+Supported case conversions (from the [`convert_case`](https://docs.rs/convert_case/latest/convert_case/enum.Case.html) crate): `Upper`, `Lower`, `Title`, `Toggle`, `Camel`, `Pascal`, `UpperCamel`, `Snake`, `UpperSnake`, `ScreamingSnake`, `Kebab`, `Cobol`, `UpperKebab`, `Train`, `Flat`, `UpperFlat`, `Alternating`
