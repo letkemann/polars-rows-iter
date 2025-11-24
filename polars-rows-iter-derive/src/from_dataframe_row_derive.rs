@@ -281,7 +281,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
                 where
                     Self: Sized
             {
-                use convert_case::{Case, Casing};
+                use polars_rows_iter_exports::convert_case::{Case, Casing};
 
                 #(#iter_create_list)*
 
