@@ -141,3 +141,28 @@ fn main() {
 ```
 
 Supported case conversions (from the [`convert_case`](https://docs.rs/convert_case/latest/convert_case/enum.Case.html) crate): `Upper`, `Lower`, `Title`, `Toggle`, `Camel`, `Pascal`, `UpperCamel`, `Snake`, `UpperSnake`, `ScreamingSnake`, `Kebab`, `Cobol`, `UpperKebab`, `Train`, `Flat`, `UpperFlat`, `Alternating`
+
+### Version Compatibility
+
+| polars-rows-iter | Polars |
+|------------------|--------|
+| v0.12.1 | 0.52.0 |
+| v0.12.0 | 0.52.0 |
+| v0.11.1 | 0.52.0 |
+| v0.11.0 | 0.51.0 |
+| v0.10.0 | 0.51.0 |
+| v0.9.8 | 0.51.0 |
+| v0.9.7 | 0.50.0 |
+| v0.9.6 | 0.49.1 |
+| v0.9.5 | 0.48.1 |
+| v0.9.4 | 0.48.0 |
+| v0.9.3 | 0.47.1 |
+| v0.9.2 | 0.46.0 |
+| v0.9.1 | 0.45.1 |
+| v0.8.0 | 0.45.1 |
+| v0.7.0 | 0.45.0 |
+| v0.6.0 | 0.44.2 |
+| v0.5.0 | 0.44.2 |
+| v0.4.0 | 0.44.2 |
+| v0.3.0 | 0.44.2 |
+| v0.2.0 | 0.44.2 |
