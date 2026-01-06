@@ -3,7 +3,7 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for i32 {
     type RawInner = i32;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i32>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i32>> + 'a> {
         create_iter(column)
     }
 
@@ -18,7 +18,7 @@ impl<'a> IterFromColumn<'a> for i32 {
 
 impl<'a> IterFromColumn<'a> for Option<i32> {
     type RawInner = i32;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i32>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i32>> + 'a> {
         create_iter(column)
     }
 
@@ -31,17 +31,13 @@ impl<'a> IterFromColumn<'a> for Option<i32> {
     }
 }
 
-fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i32>> + 'a>> {
+fn create_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i32>> + 'a> {
     let column_name = column.name().as_str();
-    let iter = match column.dtype() {
-        DataType::Int32 => Box::new(column.i32()?.iter()),
-        DataType::Date => Box::new(column.date()?.phys.iter()),
-        dtype => {
-            return Err(polars_err!(SchemaMismatch: "Cannot get i32 from column '{column_name}' with dtype : {dtype}"))
-        }
-    };
-
-    Ok(iter)
+    match column.dtype() {
+        DataType::Int32 => Ok(column.i32()?.iter()),
+        DataType::Date => Ok(column.date()?.phys.iter()),
+        dtype => Err(polars_err!(SchemaMismatch: "Cannot get i32 from column '{column_name}' with dtype : {dtype}")),
+    }
 }
 
 #[cfg(test)]

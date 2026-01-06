@@ -2,7 +2,7 @@ use polars::prelude::*;
 
 pub trait IterFromColumn<'a> {
     type RawInner;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<Self::RawInner>> + 'a>>
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Self::RawInner>> + 'a>
     where
         Self: Sized;
 

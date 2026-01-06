@@ -3,7 +3,7 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for &'a [u8] {
     type RawInner = &'a [u8];
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a [u8]>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
         create_iter(column)
     }
 
@@ -18,7 +18,7 @@ impl<'a> IterFromColumn<'a> for &'a [u8] {
 
 impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
     type RawInner = &'a [u8];
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a [u8]>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
         create_iter(column)
     }
 
@@ -31,7 +31,7 @@ impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
     }
 }
 
-fn create_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a [u8]>> + 'a>> {
+fn create_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
     let column_name = column.name().as_str();
     let iter: Box<dyn Iterator<Item = Option<&[u8]>>> = match column.dtype() {
         DataType::Binary => Box::new(column.binary()?.iter()),

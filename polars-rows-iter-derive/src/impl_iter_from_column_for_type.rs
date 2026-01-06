@@ -4,8 +4,8 @@ pub fn create_impl_for(ident: syn::Ident) -> proc_macro::TokenStream {
     quote! {
         impl<'a> IterFromColumn<'a> for #ident {
             type RawInner = #ident;
-            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = Option<#ident>> + 'a>> {
-                Ok(Box::new(column.#ident()?.iter()))
+            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<impl Iterator<Item = Option<#ident>> + 'a> {
+                Ok(column.#ident()?.iter())
             }
 
             #[inline]
@@ -19,8 +19,8 @@ pub fn create_impl_for(ident: syn::Ident) -> proc_macro::TokenStream {
 
         impl<'a> IterFromColumn<'a> for Option<#ident> {
             type RawInner = #ident;
-            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = Option<#ident>> + 'a>> {
-                let iter = Box::new(column.#ident()?.iter());
+            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<impl Iterator<Item = Option<#ident>> + 'a> {
+                let iter = column.#ident()?.iter();
                 Ok(iter)
             }
 
