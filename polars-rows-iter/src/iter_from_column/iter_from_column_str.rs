@@ -4,7 +4,7 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for &'a str {
     type RawInner = &'a str;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a str>> + 'a> {
         create_iter(column)
     }
 
@@ -19,7 +19,7 @@ impl<'a> IterFromColumn<'a> for &'a str {
 
 impl<'a> IterFromColumn<'a> for Option<&'a str> {
     type RawInner = &'a str;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<&'a str>> + 'a>> {
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a str>> + 'a> {
         create_iter(column)
     }
 

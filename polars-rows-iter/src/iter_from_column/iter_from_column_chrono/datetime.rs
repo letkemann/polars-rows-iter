@@ -4,7 +4,7 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for DateTime<Utc> {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i64>> + 'a>>
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a>
     where
         Self: Sized,
     {
@@ -24,7 +24,7 @@ impl<'a> IterFromColumn<'a> for DateTime<Utc> {
 
 impl<'a> IterFromColumn<'a> for Option<DateTime<Utc>> {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i64>> + 'a>>
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a>
     where
         Self: Sized,
     {
@@ -41,9 +41,8 @@ impl<'a> IterFromColumn<'a> for Option<DateTime<Utc>> {
     }
 }
 
-fn create_datetime_iter<'a>(column: &'a Column) -> PolarsResult<Box<dyn Iterator<Item = Option<i64>> + 'a>> {
-    let iter = column.datetime()?.phys.iter();
-    Ok(Box::new(iter))
+fn create_datetime_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a> {
+    Ok(column.datetime()?.phys.iter())
 }
 
 fn create_datetime(timestamp: i64, column_name: &str, dtype: &DataType) -> PolarsResult<DateTime<Utc>> {
