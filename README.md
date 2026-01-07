@@ -2,6 +2,45 @@
 
 Library for simple and convenient row iteration of polars dataframes
 
+This crate provides two main approaches for iterating over DataFrame rows:
+
+- **Struct-based iteration** using `#[derive(FromDataFrameRow)]` - best for complex rows with many columns
+- **Tuple-based iteration** using the `df_rows_iter!` macro - best for quick, simple iterations
+
+### Example with tuple-based iteration:
+
+For simple use cases where you don't need a dedicated struct, use the `df_rows_iter!` macro to iterate over rows as tuples:
+
+```rust
+use polars::prelude::*;
+use polars_rows_iter::*;
+
+fn main() {
+    let df = df!(
+        "name" => ["Alice", "Bob", "Charlie"],
+        "age" => [25i32, 30, 35],
+        "score" => [Some(95.5f64), None, Some(87.0)]
+    ).unwrap();
+
+    let score_col = format!("sco{}", "re"); // dynamic column name
+
+    let iter = df_rows_iter!(
+        &df,
+        "name" => &str,
+        "age" => i32,
+        score_col => Option<f64>
+    ).unwrap();
+
+    for row in iter {
+        let (name, age, score) = row.unwrap();
+        println!("{name}: age {age}, score {score:?}");
+    }
+}
+```
+
+The macro supports tuples of up to 10 elements. Each element is specified as `column_name => Type`.
+Column names can be string literals or any expression that implements `AsRef<str>`.
+
 ### Example with static column names:
 
 ```rust
@@ -145,24 +184,24 @@ Supported case conversions (from the [`convert_case`](https://docs.rs/convert_ca
 ### Version Compatibility
 
 | polars-rows-iter | Polars |
-|------------------|--------|
-| v0.12.1 | 0.52.0 |
-| v0.12.0 | 0.52.0 |
-| v0.11.1 | 0.52.0 |
-| v0.11.0 | 0.51.0 |
-| v0.10.0 | 0.51.0 |
-| v0.9.8 | 0.51.0 |
-| v0.9.7 | 0.50.0 |
-| v0.9.6 | 0.49.1 |
-| v0.9.5 | 0.48.1 |
-| v0.9.4 | 0.48.0 |
-| v0.9.3 | 0.47.1 |
-| v0.9.2 | 0.46.0 |
-| v0.9.1 | 0.45.1 |
-| v0.8.0 | 0.45.1 |
-| v0.7.0 | 0.45.0 |
-| v0.6.0 | 0.44.2 |
-| v0.5.0 | 0.44.2 |
-| v0.4.0 | 0.44.2 |
-| v0.3.0 | 0.44.2 |
-| v0.2.0 | 0.44.2 |
+| ---------------- | ------ |
+| v0.12.1          | 0.52.0 |
+| v0.12.0          | 0.52.0 |
+| v0.11.1          | 0.52.0 |
+| v0.11.0          | 0.51.0 |
+| v0.10.0          | 0.51.0 |
+| v0.9.8           | 0.51.0 |
+| v0.9.7           | 0.50.0 |
+| v0.9.6           | 0.49.1 |
+| v0.9.5           | 0.48.1 |
+| v0.9.4           | 0.48.0 |
+| v0.9.3           | 0.47.1 |
+| v0.9.2           | 0.46.0 |
+| v0.9.1           | 0.45.1 |
+| v0.8.0           | 0.45.1 |
+| v0.7.0           | 0.45.0 |
+| v0.6.0           | 0.44.2 |
+| v0.5.0           | 0.44.2 |
+| v0.4.0           | 0.44.2 |
+| v0.3.0           | 0.44.2 |
+| v0.2.0           | 0.44.2 |
