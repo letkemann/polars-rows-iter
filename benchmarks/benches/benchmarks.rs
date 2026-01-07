@@ -5,18 +5,7 @@ use polars_rows_iter::*;
 use std::{collections::HashMap, hint::black_box, time::Duration};
 pub type IsOptional = bool;
 
-#[path = "../src/shared_test_helpers.rs"]
-mod shared;
-use shared::*;
-
-#[cfg(feature = "dtype-categorical")]
-#[allow(dead_code)]
-fn check_categorical_feature_is_enabled() {}
-
-#[cfg(not(feature = "dtype-categorical"))]
-fn check_categorical_feature_is_enabled() {
-    panic!("!!! Please run 'cargo bench' with '--all-features' flag !!!")
-}
+use testing::*;
 
 fn get_dataframe_heights_to_benchmark() -> Vec<usize> {
     vec![1, 10, 100, 1_000, 10_000]
@@ -353,8 +342,6 @@ fn add_optional_column_types_group(c: &mut Criterion) {
 }
 
 pub fn collect_groups(c: &mut Criterion) {
-    check_categorical_feature_is_enabled();
-
     add_all_column_types_group(c);
     add_primitive_column_types_group(c);
     add_mandatory_column_types_group(c);

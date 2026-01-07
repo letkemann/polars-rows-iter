@@ -49,7 +49,7 @@ mod tests {
     use itertools::{izip, Itertools};
     use polars::prelude::*;
     use rand::{rngs::StdRng, SeedableRng};
-    use shared_test_helpers::*;
+    use testing::*;
 
     create_rows_iter_test_for_chunked_type!(i32_test, i32, i32, DataType::Int32, ROW_COUNT);
 

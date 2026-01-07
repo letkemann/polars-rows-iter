@@ -1,0 +1,30 @@
+[package]
+name = "benchmarks"
+version = "0.1.0"
+edition = "2021"
+
+
+[[bench]]
+name = "benchmarks"
+harness = false
+
+
+[dependencies]
+polars-rows-iter = { path = "../polars-rows-iter", features = [
+    "dtype-categorical",
+    "dtype-time",
+    "chrono",
+] }
+testing = { path = "../testing" }
+polars = { version = "0.52", features = ["dtype-full"] }
+itertools = "0.14"
+rand = "0.9.2"
+chrono = { version = "0.4", optional = true }
+
+[dev-dependencies]
+criterion = "0.8.1"
+
+
+[features]
+test = []
+default = []

@@ -100,6 +100,3 @@ pub use dataframe_rows_iter_ext::*;
 pub use from_dataframe_row::*;
 pub use iter_from_column::*;
 pub use polars_rows_iter_derive::FromDataFrameRow;
-
-#[cfg(test)]
-pub mod shared_test_helpers;

@@ -55,7 +55,7 @@ mod tests {
     use itertools::{izip, Itertools};
     use polars::prelude::*;
     use rand::{rngs::StdRng, SeedableRng};
-    use shared_test_helpers::*;
+    use testing::*;
 
     create_rows_iter_test_for_chunked_type!(i64_test, i64, i64, DataType::Int64, ROW_COUNT);
 

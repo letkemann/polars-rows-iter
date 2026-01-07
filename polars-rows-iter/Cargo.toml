@@ -15,16 +15,12 @@ convert_case.workspace = true
 
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
-criterion.workspace = true
 rand.workspace = true
 itertools.workspace = true
+testing.workspace = true
 
 [features]
 default = []
 dtype-categorical = ["polars/dtype-categorical"]
 dtype-time = ["polars/dtype-time"]
 chrono = ["dep:chrono"]
-
-[[bench]]
-name = "benchmark"
-harness = false
