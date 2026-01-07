@@ -2,7 +2,48 @@
 //!
 //! Simple and convenient iteration of polars dataframe rows.
 //!
-//! ##### Example: Dataframe without None/null values:
+//! This crate provides two main approaches for iterating over DataFrame rows:
+//! - **Struct-based iteration** using `#[derive(FromDataFrameRow)]` - best for complex rows with many columns
+//! - **Tuple-based iteration** using the [`df_rows_iter!`] macro - best for quick, simple iterations
+//!
+//! ## Tuple-based iteration with `df_rows_iter!`
+//!
+//! For simple use cases where you don't need a dedicated struct, use the [`df_rows_iter!`] macro
+//! to iterate over rows as tuples:
+//!
+//! ```rust
+//! use polars::prelude::*;
+//! use polars_rows_iter::*;
+//!
+//! fn main() {
+//!     let df = df!(
+//!         "name" => ["Alice", "Bob", "Charlie"],
+//!         "age" => [25i32, 30, 35],
+//!         "score" => [Some(95.5f64), None, Some(87.0)]
+//!     ).unwrap();
+//!
+//!     let score_col = format!("sco{}", "re"); // dynamic column name
+//!
+//!     let iter = df_rows_iter!(
+//!         &df,
+//!         "name" => &str,       // string literal
+//!         "age" => i32,
+//!         score_col => Option<f64>  // variable
+//!     ).unwrap();
+//!
+//!     for row in iter {
+//!         let (name, age, score) = row.unwrap();
+//!         println!("{name}: age {age}, score {score:?}");
+//!     }
+//! }
+//! ```
+//!
+//! The macro supports tuples of up to 10 elements. Each element is specified as `column_name => Type`.
+//! Column names can be string literals or any expression that implements `AsRef<str>`.
+//!
+//! ## Struct-based iteration with `FromDataFrameRow`
+//!
+//! For more complex use cases, derive `FromDataFrameRow` on a struct:
 //! ```rust
 //!use polars::prelude::*;
 //!use polars_rows_iter::*;
@@ -89,6 +130,8 @@
 //! ?: Support not yet certain<br>
 //! X: No Support
 
+extern crate self as polars_rows_iter;
+
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
 mod iter_from_column;
@@ -99,4 +142,7 @@ pub mod polars_rows_iter_exports {
 pub use dataframe_rows_iter_ext::*;
 pub use from_dataframe_row::*;
 pub use iter_from_column::*;
+use polars_rows_iter_derive::impl_tuple_rows_iter;
 pub use polars_rows_iter_derive::FromDataFrameRow;
+
+impl_tuple_rows_iter!(10);
