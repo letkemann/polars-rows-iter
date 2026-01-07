@@ -41,7 +41,7 @@ mod tests {
     use itertools::{izip, Itertools};
     use polars::prelude::*;
     use rand::{rngs::StdRng, SeedableRng};
-    use shared_test_helpers::*;
+    use testing::*;
 
     const ROW_COUNT: usize = 64;
 

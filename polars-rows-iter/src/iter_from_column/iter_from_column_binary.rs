@@ -53,7 +53,7 @@ mod tests {
     use super::*;
     use itertools::{izip, Itertools};
     use rand::{rngs::StdRng, SeedableRng};
-    use shared_test_helpers::*;
+    use testing::*;
 
     #[test]
     fn binary_test() {

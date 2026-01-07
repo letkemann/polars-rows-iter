@@ -1,0 +1,13 @@
+[package]
+name = "testing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+keywords.workspace = true
+
+[dependencies]
+polars.workspace = true
+itertools.workspace = true
+rand.workspace = true
