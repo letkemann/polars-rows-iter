@@ -136,8 +136,8 @@ fn create_where_predicate(tp: &TypeParam, ltp: &LifetimeParam, with_lifetime: bo
     let tp_ident = &tp.ident;
 
     let stream = match with_lifetime {
-        true => quote! { #tp_ident : IterFromColumn<#ltp> + #ltp },
-        false => quote! { #tp_ident : IterFromColumn<#ltp> },
+        true => quote! { #tp_ident : ::polars_rows_iter::IterFromColumn<#ltp> + #ltp },
+        false => quote! { #tp_ident : ::polars_rows_iter::IterFromColumn<#ltp> },
     };
 
     syn::parse2(stream).unwrap()
@@ -183,7 +183,7 @@ fn create_builder_struct_column_name_builder_impl(ctx: &Context) -> proc_macro2:
     let builder_struct_ident = &ctx.builder_struct_ident;
 
     quote! {
-        impl ColumnNameBuilder for #builder_struct_ident {
+        impl ::polars_rows_iter::ColumnNameBuilder for #builder_struct_ident {
             fn build(self) -> std::collections::HashMap<&'static str, String> {
                 self.columns
             }
@@ -242,7 +242,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
             let column_name = column_name.as_deref();
             #default_column_name
             let column = dataframe.column(column_name.unwrap_or(default_column_name))?;
-            let #ident_iter = Box::new(<#field_type as IterFromColumn<#lifetime>>::create_iter(column)?);
+            let #ident_iter = Box::new(<#field_type as ::polars_rows_iter::IterFromColumn<#lifetime>>::create_iter(column)?);
             let #ident_dtype = column.dtype().clone();
         }
     });
@@ -272,16 +272,16 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
 
     quote::quote! {
         #[automatically_derived]
-        impl #impl_generics FromDataFrameRow #lifetime_generics for #struct_ident #struct_generics #where_clause{
+        impl #impl_generics ::polars_rows_iter::FromDataFrameRow #lifetime_generics for #struct_ident #struct_generics #where_clause{
             type Builder = #builder_struct_ident;
             fn from_dataframe(
-                dataframe: & #lifetime polars::prelude::DataFrame,
+                dataframe: & #lifetime ::polars::prelude::DataFrame,
                 mut columns: std::collections::HashMap<&'static str, String>
-            ) -> polars::prelude::PolarsResult<Box<dyn Iterator<Item = polars::prelude::PolarsResult<Self>> + #lifetime>>
+            ) -> ::polars::prelude::PolarsResult<Box<dyn Iterator<Item = ::polars::prelude::PolarsResult<Self>> + #lifetime>>
                 where
                     Self: Sized
             {
-                use polars_rows_iter_exports::convert_case::{Case, Casing};
+                use ::polars_rows_iter::convert_case::{Case, Casing};
 
                 #(#iter_create_list)*
 
@@ -364,8 +364,8 @@ fn create_iterator_struct_field(field_info: &FieldInfo, lifetime: &LifetimeParam
     let dtype_ident = &field_info.dtype_ident;
     let ty = coerce_lifetime(field_info.inner_ty.clone(), lifetime);
     quote! {
-        #ident : Box<dyn Iterator<Item = Option<<#ty as IterFromColumn<#lifetime>>::RawInner>> + #lifetime>,
-        #dtype_ident: polars::prelude::DataType,
+        #ident : Box<dyn Iterator<Item = Option<<#ty as ::polars_rows_iter::IterFromColumn<#lifetime>>::RawInner>> + #lifetime>,
+        #dtype_ident: ::polars::prelude::DataType,
     }
 }
 
@@ -396,7 +396,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
     let fn_params = ctx.fields_list.iter().map(|field_info| {
         let ident = &field_info.ident;
         let field_type = coerce_lifetime(field_info.inner_ty.clone(), &lifetime);
-        quote! { #ident: Option<<#field_type as IterFromColumn<#lifetime>>::RawInner> }
+        quote! { #ident: Option<<#field_type as ::polars_rows_iter::IterFromColumn<#lifetime>>::RawInner> }
     });
 
     let assignments = ctx.fields_list.iter().map(|field_info| {
@@ -406,8 +406,8 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
         let column_name = &field_info.column_name_expr;
 
         match field_info.is_optional {
-            true => quote! { #ident: <Option<#field_type> as IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
-            false => quote! { #ident: <#field_type as IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
+            true => quote! { #ident: <Option<#field_type> as ::polars_rows_iter::IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
+            false => quote! { #ident: <#field_type as ::polars_rows_iter::IterFromColumn<#lifetime>>::get_value(#ident, #column_name, &self.#ident_dtype)? },
         }
     });
 
@@ -426,7 +426,7 @@ fn create_iterator_struct_impl(ctx: &Context) -> proc_macro2::TokenStream {
             fn create(
                 &self,
                 #(#fn_params,)*
-            ) -> polars::prelude::PolarsResult<#struct_ident #type_generics> {
+            ) -> ::polars::prelude::PolarsResult<#struct_ident #type_generics> {
 
                 Ok(#struct_ident {
                     #(#assignments,)*
@@ -490,7 +490,7 @@ fn create_iterator_impl_for_iterator_struct(ctx: &Context) -> proc_macro2::Token
 
     quote! {
         impl #impl_generics Iterator for #iter_struct_ident #struct_generics #where_clause {
-            type Item = polars::prelude::PolarsResult<#struct_ident #type_generics>;
+            type Item = ::polars::prelude::PolarsResult<#struct_ident #type_generics>;
 
             fn next(&mut self) -> Option<Self::Item> {
                 #(#next_value_list;)*

@@ -135,10 +135,8 @@ extern crate self as polars_rows_iter;
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
 mod iter_from_column;
-pub mod polars_rows_iter_exports {
-    pub use convert_case;
-}
 
+pub use convert_case;
 pub use dataframe_rows_iter_ext::*;
 pub use from_dataframe_row::*;
 pub use iter_from_column::*;
