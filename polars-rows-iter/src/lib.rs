@@ -88,6 +88,50 @@
 //! Every row is wrapped with a PolarsError, in case of an unexpected null value the row creation fails and the iterator
 //! returns an Err(...) for the row. One can decide to cancel the iteration or to skip the affected row.
 //!
+//! ## Column Name Transformations
+//!
+//! The `#[from_dataframe(...)]` attribute allows automatic transformation of field names to column names:
+//!
+//! ```rust
+//! use polars::prelude::*;
+//! use polars_rows_iter::*;
+//!
+//! #[derive(Debug, FromDataFrameRow)]
+//! #[from_dataframe(convert_case(Pascal), prefix("col_"))]
+//! struct MyRow {
+//!     user_name: String,  // maps to column "col_UserName"
+//!     age: i32,           // maps to column "col_Age"
+//! }
+//!
+//! fn main() {
+//!     let df = df!(
+//!         "col_UserName" => ["Alice", "Bob"],
+//!         "col_Age" => [25i32, 30]
+//!     ).unwrap();
+//!
+//!     let rows: Vec<MyRow> = df.rows_iter::<MyRow>()
+//!         .unwrap()
+//!         .collect::<PolarsResult<Vec<_>>>()
+//!         .unwrap();
+//!
+//!     assert_eq!(rows[0].user_name, "Alice");
+//!     assert_eq!(rows[0].age, 25);
+//! }
+//! ```
+//!
+//! ### Available options:
+//!
+//! - `convert_case(Case)` - Convert field names using a case style. Supported cases:
+//!   `Upper`, `Lower`, `Title`, `Toggle`, `Camel`, `Pascal`, `UpperCamel`, `Snake`,
+//!   `UpperSnake`, `ScreamingSnake`, `Kebab`, `Cobol`, `UpperKebab`, `Train`, `Flat`,
+//!   `UpperFlat`, `Alternating`
+//! - `prefix("str")` - Add a prefix to all column names
+//! - `postfix("str")` - Add a postfix/suffix to all column names
+//!
+//! These can be combined: `#[from_dataframe(convert_case(Snake), prefix("data_"), postfix("_col"))]`
+//!
+//! Individual fields can still override with `#[column("explicit_name")]`.
+//!
 //! ## Supported types
 //!
 //! |State|Rust Type|Supported Polars DataType|Feature Flag|
@@ -135,10 +179,8 @@ extern crate self as polars_rows_iter;
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
 mod iter_from_column;
-pub mod polars_rows_iter_exports {
-    pub use convert_case;
-}
 
+pub use convert_case;
 pub use dataframe_rows_iter_ext::*;
 pub use from_dataframe_row::*;
 pub use iter_from_column::*;

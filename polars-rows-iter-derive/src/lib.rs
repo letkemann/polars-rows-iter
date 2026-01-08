@@ -11,7 +11,10 @@ mod tuple_iterators;
 
 #[proc_macro_derive(FromDataFrameRow, attributes(column, from_dataframe))]
 pub fn from_dataframe_row_derive_macro(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let ast: syn::DeriveInput = syn::parse2(input.into()).unwrap();
+    let ast: syn::DeriveInput = match syn::parse2(input.into()) {
+        Ok(ast) => ast,
+        Err(e) => return e.into_compile_error().into(),
+    };
     from_dataframe_row_derive::from_dataframe_row_derive_impl(ast)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
@@ -19,7 +22,10 @@ pub fn from_dataframe_row_derive_macro(input: proc_macro::TokenStream) -> proc_m
 
 #[proc_macro]
 pub fn iter_from_column_for_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let ident: syn::Ident = syn::parse(input).unwrap();
+    let ident: syn::Ident = match syn::parse(input) {
+        Ok(ident) => ident,
+        Err(e) => return e.into_compile_error().into(),
+    };
     impl_iter_from_column_for_type::create_impl_for(ident)
 }
 
