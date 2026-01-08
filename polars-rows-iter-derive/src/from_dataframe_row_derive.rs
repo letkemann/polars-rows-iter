@@ -15,8 +15,18 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> syn::Result<TokenStre
 
     let struct_data = match &ast.data {
         syn::Data::Struct(data_struct) => data_struct,
-        syn::Data::Enum(_) => panic!("Enums not supported"),
-        syn::Data::Union(_) => panic!("Unions not supported"),
+        syn::Data::Enum(e) => {
+            return Err(syn::Error::new_spanned(
+                e.enum_token,
+                "FromDataFrameRow cannot be derived for enums",
+            ))
+        }
+        syn::Data::Union(u) => {
+            return Err(syn::Error::new_spanned(
+                u.union_token,
+                "FromDataFrameRow cannot be derived for unions",
+            ))
+        }
     };
 
     let struct_ident = ast.ident.clone();
@@ -27,17 +37,23 @@ pub fn from_dataframe_row_derive_impl(ast: DeriveInput) -> syn::Result<TokenStre
         Span::call_site(),
     );
 
-    let fields_list: Vec<_> = struct_data
+    let fields_list: Vec<FieldInfo> = struct_data
         .fields
         .iter()
         .cloned()
         .map(create_iterator_struct_field_info)
-        .collect();
+        .collect::<syn::Result<Vec<_>>>()?;
 
     let has_lifetime = match ast.generics.lifetimes().count() {
         0 => false,
         1 => true,
-        _ => panic!("Multiple lifetimes in row structure are not supported!"),
+        _ => {
+            let extra_lifetime = ast.generics.lifetimes().nth(1).unwrap();
+            return Err(syn::Error::new(
+                extra_lifetime.lifetime.span(),
+                "FromDataFrameRow only supports a single lifetime parameter",
+            ));
+        }
     };
 
     let builder_struct_ident = Ident::new(&format!("{struct_ident}ColumnBuilder"), Span::call_site());
@@ -140,7 +156,7 @@ fn create_where_predicate(tp: &TypeParam, ltp: &LifetimeParam, with_lifetime: bo
         false => quote! { #tp_ident : ::polars_rows_iter::IterFromColumn<#ltp> },
     };
 
-    syn::parse2(stream).unwrap()
+    syn::parse2(stream).expect("internal error: failed to parse generated where predicate")
 }
 
 fn create_builder_struct(ctx: &Context) -> proc_macro2::TokenStream {
@@ -301,15 +317,23 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
 #[deluxe(attributes(column))]
 struct ColumnFieldAttributes(#[deluxe(flatten)] Vec<syn::Expr>);
 
-fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
-    let ident = field.ident.as_ref().expect("anonymous fields not supported").clone();
+fn create_iterator_struct_field_info(mut field: Field) -> syn::Result<FieldInfo> {
+    let ident = match &field.ident {
+        Some(ident) => ident.clone(),
+        None => {
+            return Err(syn::Error::new_spanned(
+                &field,
+                "FromDataFrameRow requires named fields (tuple structs not supported)",
+            ))
+        }
+    };
     let name = ident.to_string();
 
     let iter_ident = Ident::new(format!("{name}_iter").as_str(), Span::call_site());
     let dtype_ident = Ident::new(format!("{name}_dtype").as_str(), Span::call_site());
     let ty = field.ty.clone();
 
-    let attrs: ColumnFieldAttributes = deluxe::extract_attributes(&mut field).unwrap();
+    let attrs: ColumnFieldAttributes = deluxe::extract_attributes(&mut field)?;
 
     let column_name_expr = match attrs.0.len() {
         0 => Expr::Lit(ExprLit {
@@ -317,13 +341,18 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
             lit: syn::Lit::Str(LitStr::new(&name, field.span())),
         }),
         1 => attrs.0[0].clone(),
-        _ => panic!("Field '{name}' can have only one column name"),
+        _ => {
+            return Err(syn::Error::new_spanned(
+                &field,
+                format!("field '{}' can have only one #[column(...)] attribute", name),
+            ))
+        }
     };
 
     let mut is_optional = false;
     let inner_ty = get_inner_type_from_options(ty.clone(), &mut is_optional);
 
-    FieldInfo {
+    Ok(FieldInfo {
         name,
         ident,
         iter_ident,
@@ -331,15 +360,15 @@ fn create_iterator_struct_field_info(mut field: Field) -> FieldInfo {
         inner_ty,
         is_optional,
         column_name_expr,
-    }
+    })
 }
 
 fn try_get_inner_option_type(ty: &Type) -> Option<Type> {
     if let Type::Path(type_path) = ty {
-        let segment = type_path.path.segments.first().unwrap();
+        let segment = type_path.path.segments.first()?;
         if segment.ident == "Option" {
             if let PathArguments::AngleBracketed(gen) = &segment.arguments {
-                let gen_args = gen.args.first().unwrap();
+                let gen_args = gen.args.first()?;
                 if let GenericArgument::Type(inner_type) = gen_args {
                     return Some(inner_type.clone());
                 }
