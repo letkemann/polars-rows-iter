@@ -14,8 +14,8 @@ polars-rows-iter = { path = "../polars-rows-iter", features = [
     "dtype-categorical",
     "dtype-time",
     "chrono",
+    "testing",
 ] }
-testing = { path = "../testing" }
 polars = { version = "0.52", features = ["dtype-full"] }
 itertools = "0.14"
 rand = "0.9.2"

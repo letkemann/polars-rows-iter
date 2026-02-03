@@ -10,17 +10,20 @@ keywords.workspace = true
 [dependencies]
 polars.workspace = true
 chrono = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
+itertools = { workspace = true, optional = true }
 polars-rows-iter-derive.workspace = true
 convert_case.workspace = true
+
 
 [dev-dependencies]
 polars = { workspace = true, features = ["dtype-full"] }
 rand.workspace = true
 itertools.workspace = true
-testing.workspace = true
 
 [features]
 default = []
 dtype-categorical = ["polars/dtype-categorical"]
 dtype-time = ["polars/dtype-time"]
 chrono = ["dep:chrono"]
+testing = ["dep:rand", "dep:itertools"]
