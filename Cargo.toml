@@ -4,7 +4,7 @@ members = ["polars-rows-iter", "polars-rows-iter-derive", "testing"]
 exclude = ["benchmarks"]
 
 [workspace.package]
-version = "0.12.1"
+version = "0.13.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/letkemann/polars-rows-iter"
@@ -12,7 +12,7 @@ description = "Library for easy and convenient row iteration of polars dataframe
 keywords = ["polars", "dataframe", "rows", "iterator"]
 
 [workspace.dependencies]
-polars-rows-iter-derive = { version = "=0.12.1", path = "polars-rows-iter-derive" }
+polars-rows-iter-derive = { version = "=0.13.0", path = "polars-rows-iter-derive" }
 testing = { path = "./testing" }
 polars = "0.52.0"
 chrono = "0.4.42"
