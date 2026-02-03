@@ -179,6 +179,8 @@ extern crate self as polars_rows_iter;
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
 mod iter_from_column;
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
 
 pub use convert_case;
 pub use dataframe_rows_iter_ext::*;
