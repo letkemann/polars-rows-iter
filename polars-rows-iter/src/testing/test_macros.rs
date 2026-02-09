@@ -27,7 +27,7 @@ macro_rules! create_rows_iter_test_for_chunked_type {
                 .iter()
                 .collect_vec();
 
-            let df = DataFrame::new(vec![col, col_opt]).unwrap();
+            let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
             let col_iter = col_values.iter();
             let col_opt_iter = col_opt_values.iter();
@@ -84,7 +84,7 @@ macro_rules! create_rows_iter_test_for_logical_type {
                 .iter()
                 .collect_vec();
 
-            let df = DataFrame::new(vec![col, col_opt]).unwrap();
+            let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
             let col_iter = col_values.iter();
             let col_opt_iter = col_opt_values.iter();

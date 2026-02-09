@@ -3,7 +3,7 @@ use polars::prelude::*;
 use rand::{
     distr::{Alphanumeric, Distribution, StandardUniform},
     rngs::StdRng,
-    Rng, SeedableRng,
+    RngExt, SeedableRng,
 };
 use std::collections::HashMap;
 
@@ -289,5 +289,5 @@ pub fn create_dataframe(columns: HashMap<&str, ColumnType>, height: usize) -> Da
         .map(|(name, ColumnType(dtype, optional))| create_column(name, dtype.as_ref(), optional, height, &mut rng))
         .collect::<Vec<Column>>();
 
-    DataFrame::new(columns).unwrap()
+    DataFrame::new(height, columns).unwrap()
 }

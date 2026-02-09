@@ -96,7 +96,7 @@ mod tests {
         .cast(&DataType::Datetime(TimeUnit::Milliseconds, None))
         .unwrap();
 
-        let df = DataFrame::new(vec![column_id, column_datetime, column_datetime_opt]).unwrap();
+        let df = DataFrame::new(column_id.len(), vec![column_id, column_datetime, column_datetime_opt]).unwrap();
 
         #[derive(Debug, PartialEq, FromDataFrameRow)]
         struct TestRow {
