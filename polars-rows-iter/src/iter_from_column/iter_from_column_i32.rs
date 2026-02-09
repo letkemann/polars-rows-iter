@@ -76,7 +76,7 @@ mod tests {
 
         let col_opt_values = col_opt.as_series().unwrap().time().unwrap().phys.iter().collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let col_iter = col_values.iter();
         let col_opt_iter = col_opt_values.iter();

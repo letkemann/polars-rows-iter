@@ -62,7 +62,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let col_iter = col_values.into_iter();
         let col_opt_iter = col_opt_values.into_iter();
@@ -92,7 +92,7 @@ mod tests {
 
         let col_values = col.str().unwrap().iter().map(|v| v.unwrap().to_owned()).collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col")
@@ -119,7 +119,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col_opt")
@@ -155,7 +155,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let col_iter = col_values.into_iter();
         let col_opt_iter = col_opt_values.into_iter();
@@ -196,7 +196,7 @@ mod tests {
             .map(|v| v.unwrap().to_owned())
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col")
@@ -226,7 +226,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col_opt")
@@ -264,7 +264,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let col_iter = col_values.into_iter();
         let col_opt_iter = col_opt_values.into_iter();
@@ -303,7 +303,7 @@ mod tests {
             .map(|v| v.unwrap().to_owned())
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col")
@@ -333,7 +333,7 @@ mod tests {
             .map(|v| v.map(|s| s.to_owned()))
             .collect_vec();
 
-        let df = DataFrame::new(vec![col, col_opt]).unwrap();
+        let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
         let values = df
             .scalar_iter("col_opt")
