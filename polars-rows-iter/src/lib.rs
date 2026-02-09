@@ -15,26 +15,24 @@
 //! use polars::prelude::*;
 //! use polars_rows_iter::*;
 //!
-//! fn main() {
-//!     let df = df!(
-//!         "name" => ["Alice", "Bob", "Charlie"],
-//!         "age" => [25i32, 30, 35],
-//!         "score" => [Some(95.5f64), None, Some(87.0)]
-//!     ).unwrap();
+//! let df = df!(
+//!     "name" => ["Alice", "Bob", "Charlie"],
+//!     "age" => [25i32, 30, 35],
+//!     "score" => [Some(95.5f64), None, Some(87.0)]
+//! ).unwrap();
 //!
-//!     let score_col = format!("sco{}", "re"); // dynamic column name
+//! let score_col = format!("sco{}", "re"); // dynamic column name
 //!
-//!     let iter = df_rows_iter!(
-//!         &df,
-//!         "name" => &str,       // string literal
-//!         "age" => i32,
-//!         score_col => Option<f64>  // variable
-//!     ).unwrap();
+//! let iter = df_rows_iter!(
+//!     &df,
+//!     "name" => &str,       // string literal
+//!     "age" => i32,
+//!     score_col => Option<f64>  // variable
+//! ).unwrap();
 //!
-//!     for row in iter {
-//!         let (name, age, score) = row.unwrap();
-//!         println!("{name}: age {age}, score {score:?}");
-//!     }
+//! for row in iter {
+//!     let (name, age, score) = row.unwrap();
+//!     println!("{name}: age {age}, score {score:?}");
 //! }
 //! ```
 //!
@@ -103,20 +101,18 @@
 //!     age: i32,           // maps to column "col_Age"
 //! }
 //!
-//! fn main() {
-//!     let df = df!(
-//!         "col_UserName" => ["Alice", "Bob"],
-//!         "col_Age" => [25i32, 30]
-//!     ).unwrap();
+//! let df = df!(
+//!     "col_UserName" => ["Alice", "Bob"],
+//!     "col_Age" => [25i32, 30]
+//! ).unwrap();
 //!
-//!     let rows: Vec<MyRow> = df.rows_iter::<MyRow>()
-//!         .unwrap()
-//!         .collect::<PolarsResult<Vec<_>>>()
-//!         .unwrap();
+//! let rows: Vec<MyRow> = df.rows_iter::<MyRow>()
+//!     .unwrap()
+//!     .collect::<PolarsResult<Vec<_>>>()
+//!     .unwrap();
 //!
-//!     assert_eq!(rows[0].user_name, "Alice");
-//!     assert_eq!(rows[0].age, 25);
-//! }
+//! assert_eq!(rows[0].user_name, "Alice");
+//! assert_eq!(rows[0].age, 25);
 //! ```
 //!
 //! ### Available options:
