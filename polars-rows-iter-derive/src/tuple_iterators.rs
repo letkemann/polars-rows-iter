@@ -134,7 +134,7 @@ fn create_macro_arm(count: u8) -> proc_macro2::TokenStream {
 
     quote! {
         ($df:expr, #(#pattern_parts),*) => {
-            #func_ident::<#(#generic_args),*>($df, #(#call_args),*)
+            ::polars_rows_iter::#func_ident::<#(#generic_args),*>($df, #(#call_args),*)
         };
     }
 }
