@@ -12,6 +12,6 @@ pub trait IterFromColumn<'a> {
 
     #[inline]
     fn unexpected_null_value_error(column_name: &str) -> PolarsError {
-        polars_err!(SchemaMismatch: "Found unexpected None/null value in column {column_name} with mandatory values!")
+        polars_err!(SchemaMismatch: "Found unexpected None/null value in column '{column_name}' with mandatory values!")
     }
 }
