@@ -158,7 +158,10 @@
 //! |✓|`chrono::NaiveDateTime`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::DateTime<Utc>`|`Datetime(..)`|`chrono`
 //! |✓|`chrono::Date`|`Date`|`chrono`|
-//! |?|?|`List(..)`
+//! |✓|`polars::prelude::Series`|`List(..)`
+//! |✓|`Vec<T>`|`List(..)`
+//! |X|`Vec<&str>`|`List(..)`
+//! |X|`Vec<&[u8]>`|`List(..)`
 //! |?|?|`Array(..)`|
 //! |?|?|`Decimal(..)`|
 //! |?|?|`Struct(..)`|

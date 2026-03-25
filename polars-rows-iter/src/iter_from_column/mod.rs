@@ -4,8 +4,10 @@ mod iter_from_column_chrono;
 mod iter_from_column_i32;
 mod iter_from_column_i64;
 mod iter_from_column_primitives;
+mod iter_from_column_series;
 mod iter_from_column_str;
 mod iter_from_column_string;
 mod iter_from_column_trait;
+mod iter_from_column_vec;
 
 pub use iter_from_column_trait::IterFromColumn;
