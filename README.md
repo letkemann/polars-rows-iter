@@ -185,6 +185,7 @@ Supported case conversions (from the [`convert_case`](https://docs.rs/convert_ca
 
 | polars-rows-iter | Polars |
 | ---------------- | ------ |
+| v0.13.3          | 0.54.4 |
 | v0.13.2          | 0.53.0 |
 | v0.13.1          | 0.53.0 |
 | v0.13.0          | 0.52.0 |
