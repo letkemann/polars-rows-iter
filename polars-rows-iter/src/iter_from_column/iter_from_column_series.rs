@@ -33,8 +33,13 @@ impl<'a> IterFromColumn<'a> for Option<Series> {
 
 pub(crate) fn create_series_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
     let column_name = column.name().as_str();
-    let iter: Box<dyn Iterator<Item = Option<Series>>> = match column.dtype() {
-        DataType::List(_) => Box::new(column.list()?.into_iter()),
+    let iter: Box<dyn Iterator<Item = Option<Series>> + 'a> = match column.dtype() {
+        DataType::List(_) => Box::new(
+            column
+                .list()?
+                .amortized_iter()
+                .map(|opt| opt.map(|series| series.deep_clone())),
+        ),
         dtype => {
             return Err(
                 polars_err!(SchemaMismatch: "Cannot get Series from column '{column_name}' with dtype: {dtype}"),
@@ -64,8 +69,18 @@ mod tests {
         let col = create_column("col", &dtype, false, height, &mut rng);
         let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
-        let col_values = col.list().unwrap().into_iter().map(|v| v.unwrap()).collect_vec();
-        let col_opt_values = col_opt.list().unwrap().into_iter().collect_vec();
+        let col_values = col
+            .list()
+            .unwrap()
+            .amortized_iter()
+            .map(|v| v.unwrap().deep_clone())
+            .collect_vec();
+        let col_opt_values = col_opt
+            .list()
+            .unwrap()
+            .amortized_iter()
+            .map(|v| v.map(|series| series.deep_clone()))
+            .collect_vec();
 
         let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
@@ -96,7 +111,12 @@ mod tests {
         let col = create_column("col", &dtype, false, height, &mut rng);
         let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
-        let col_values = col.list().unwrap().into_iter().map(|v| v.unwrap()).collect_vec();
+        let col_values = col
+            .list()
+            .unwrap()
+            .amortized_iter()
+            .map(|v| v.unwrap().deep_clone())
+            .collect_vec();
 
         let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
@@ -118,7 +138,12 @@ mod tests {
         let col = create_column("col", &dtype, false, height, &mut rng);
         let col_opt = create_column("col_opt", &dtype, true, height, &mut rng);
 
-        let col_opt_values = col_opt.list().unwrap().into_iter().collect_vec();
+        let col_opt_values = col_opt
+            .list()
+            .unwrap()
+            .amortized_iter()
+            .map(|v| v.map(|series| series.deep_clone()))
+            .collect_vec();
 
         let df = DataFrame::new(height, vec![col, col_opt]).unwrap();
 
