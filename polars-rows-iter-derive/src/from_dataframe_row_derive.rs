@@ -258,7 +258,7 @@ fn create_from_dataframe_row_trait_impl(ctx: &Context) -> proc_macro2::TokenStre
             let column_name = column_name.as_deref();
             #default_column_name
             let column = dataframe.column(column_name.unwrap_or(default_column_name))?;
-            let #ident_iter = Box::new(<#field_type as ::polars_rows_iter::IterFromColumn<#lifetime>>::create_iter(column)?);
+            let #ident_iter = Box::new(<Option<<#field_type as ::polars_rows_iter::IterFromColumn<#lifetime>>::RawInner> as ::polars_rows_iter::IterFromColumnRaw<#lifetime>>::create_iter(column)?);
             let #ident_dtype = column.dtype().clone();
         }
     });

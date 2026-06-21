@@ -6,7 +6,7 @@ mod context;
 mod field_info;
 mod from_dataframe_attribute;
 mod from_dataframe_row_derive;
-mod impl_iter_from_column_for_type;
+mod gen_iter_from_column_impl;
 mod tuple_iterators;
 
 #[proc_macro_derive(FromDataFrameRow, attributes(column, from_dataframe))]
@@ -26,7 +26,8 @@ pub fn iter_from_column_for_type(input: proc_macro::TokenStream) -> proc_macro::
         Ok(ident) => ident,
         Err(e) => return e.into_compile_error().into(),
     };
-    impl_iter_from_column_for_type::create_impl_for(ident)
+
+    gen_iter_from_column_impl::gen_iter_from_column_for_type(ident)
 }
 
 #[proc_macro]

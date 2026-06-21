@@ -1,5 +1,6 @@
+#[allow(unused)]
 use super::*;
-use iter_from_column_trait::IterFromColumn;
+
 use polars_rows_iter_derive::iter_from_column_for_type;
 
 iter_from_column_for_type!(bool);

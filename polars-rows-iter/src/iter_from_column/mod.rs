@@ -7,7 +7,22 @@ mod iter_from_column_primitives;
 mod iter_from_column_series;
 mod iter_from_column_str;
 mod iter_from_column_string;
-mod iter_from_column_trait;
 mod iter_from_column_vec;
 
-pub use iter_from_column_trait::IterFromColumn;
+use polars::prelude::*;
+
+pub trait IterFromColumn<'a> {
+    type RawInner;
+    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Self::RawInner>> + 'a>
+    where
+        Self: Sized;
+
+    fn get_value(polars_value: Option<Self::RawInner>, column_name: &str, dtype: &DataType) -> PolarsResult<Self>
+    where
+        Self: Sized;
+
+    #[inline]
+    fn unexpected_null_value_error(column_name: &str) -> PolarsError {
+        polars_err!(SchemaMismatch: "Found unexpected None/null value in column '{column_name}' with mandatory values!")
+    }
+}

@@ -1,5 +1,4 @@
 use super::*;
-use iter_from_column_trait::IterFromColumn;
 use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for &'a str {

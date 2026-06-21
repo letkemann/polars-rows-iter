@@ -175,16 +175,20 @@
 
 extern crate self as polars_rows_iter;
 
+mod column_ext;
 mod dataframe_rows_iter_ext;
 mod from_dataframe_row;
 mod iter_from_column;
+mod iter_from_column_raw;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
+pub use column_ext::ColumnExt;
 pub use convert_case;
 pub use dataframe_rows_iter_ext::*;
 pub use from_dataframe_row::*;
-pub use iter_from_column::*;
+pub use iter_from_column::IterFromColumn;
+pub use iter_from_column_raw::IterFromColumnRaw;
 use polars_rows_iter_derive::impl_tuple_rows_iter;
 pub use polars_rows_iter_derive::FromDataFrameRow;
 
