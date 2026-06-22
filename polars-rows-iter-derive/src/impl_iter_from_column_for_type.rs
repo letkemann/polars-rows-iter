@@ -1,6 +1,6 @@
 use quote::quote;
 
-pub fn gen_iter_from_column_for_type(ident: syn::Ident) -> proc_macro::TokenStream {
+pub fn create_impl_for(ident: syn::Ident) -> proc_macro::TokenStream {
     quote! {
         impl<'a> ::polars_rows_iter::IterFromColumnRaw<'a> for Option<#ident> {
             fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<impl Iterator<Item = Self> + 'a> {
@@ -8,12 +8,8 @@ pub fn gen_iter_from_column_for_type(ident: syn::Ident) -> proc_macro::TokenStre
             }
         }
 
-
         impl<'a> ::polars_rows_iter::IterFromColumn<'a> for #ident {
             type RawInner = #ident;
-            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<impl Iterator<Item = Option<#ident>> + 'a> {
-                Ok(column.#ident()?.iter())
-            }
 
             #[inline]
             fn get_value(polars_value: Option<#ident>, column_name: &str, dtype: &polars::prelude::DataType) -> polars::prelude::PolarsResult<Self>
@@ -26,10 +22,6 @@ pub fn gen_iter_from_column_for_type(ident: syn::Ident) -> proc_macro::TokenStre
 
         impl<'a> ::polars_rows_iter::IterFromColumn<'a> for Option<#ident> {
             type RawInner = #ident;
-            fn create_iter(column: &'a polars::prelude::Column) -> polars::prelude::PolarsResult<impl Iterator<Item = Option<#ident>> + 'a> {
-                let iter = column.#ident()?.iter();
-                Ok(iter)
-            }
 
             #[inline]
             fn get_value(polars_value: Option<#ident>, _column_name: &str, dtype: &polars::prelude::DataType) -> polars::prelude::PolarsResult<Self>

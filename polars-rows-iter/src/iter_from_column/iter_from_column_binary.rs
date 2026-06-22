@@ -3,9 +3,6 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for &'a [u8] {
     type RawInner = &'a [u8];
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<&'a [u8]>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -18,9 +15,6 @@ impl<'a> IterFromColumn<'a> for &'a [u8] {
 
 impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
     type RawInner = &'a [u8];
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<&'a [u8]>, _column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -29,21 +23,6 @@ impl<'a> IterFromColumn<'a> for Option<&'a [u8]> {
     {
         Ok(polars_value)
     }
-}
-
-fn create_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a [u8]>> + 'a> {
-    let column_name = column.name().as_str();
-    let iter: Box<dyn Iterator<Item = Option<&[u8]>>> = match column.dtype() {
-        DataType::Binary => Box::new(column.binary()?.iter()),
-        DataType::BinaryOffset => Box::new(column.binary_offset()?.iter()),
-        dtype => {
-            return Err(
-                polars_err!(SchemaMismatch: "Cannot get &[u8] from column '{column_name}' with dtype : {dtype}"),
-            )
-        }
-    };
-
-    Ok(iter)
 }
 
 #[cfg(test)]

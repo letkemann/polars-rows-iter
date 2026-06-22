@@ -12,10 +12,7 @@ mod iter_from_column_vec;
 use polars::prelude::*;
 
 pub trait IterFromColumn<'a> {
-    type RawInner;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Self::RawInner>> + 'a>
-    where
-        Self: Sized;
+    type RawInner: 'a;
 
     fn get_value(polars_value: Option<Self::RawInner>, column_name: &str, dtype: &DataType) -> PolarsResult<Self>
     where

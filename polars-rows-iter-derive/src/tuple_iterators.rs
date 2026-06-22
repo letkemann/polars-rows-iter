@@ -35,6 +35,7 @@ struct Type {
     index: u8,
     type_gp: syn::GenericParam,
     type_gp_constraint: TokenStream,
+    type_gp_raw_constraint: TokenStream,
     iter_gp: syn::GenericParam,
     iter_gp_constraint: TokenStream,
     iter_field_ident: syn::Ident,
@@ -52,6 +53,8 @@ impl Type {
         // generic types
         let type_gp = Self::create_generic_param("T", index);
         let type_gp_constraint = quote! { #type_gp: ::polars_rows_iter::IterFromColumn<'a> + 'a };
+        let type_gp_raw_constraint =
+            quote! { Option<#type_gp::RawInner>: ::polars_rows_iter::IterFromColumnRaw<'a> + 'a };
 
         let iter_gp = Self::create_generic_param("I", index);
         let iter_gp_constraint = quote! { #iter_gp : Iterator<Item = Option<#type_gp::RawInner>> + 'a };
@@ -71,6 +74,7 @@ impl Type {
             index,
             type_gp,
             type_gp_constraint,
+            type_gp_raw_constraint,
             iter_gp,
             iter_gp_constraint,
             iter_field_ident,
@@ -152,7 +156,13 @@ fn create_iterator(count: u8) -> proc_macro2::TokenStream {
 
     let generic_constraints = types
         .iter()
-        .flat_map(|ty| [&ty.type_gp_constraint, &ty.iter_gp_constraint])
+        .flat_map(|ty| {
+            [
+                &ty.type_gp_constraint,
+                &ty.type_gp_raw_constraint,
+                &ty.iter_gp_constraint,
+            ]
+        })
         .collect_vec();
 
     let tuple_types = types.iter().map(|ty| &ty.type_gp).collect_vec();
@@ -187,7 +197,13 @@ fn create_iterator(count: u8) -> proc_macro2::TokenStream {
 
     let create_func_generic_constraints = types
         .iter()
-        .flat_map(|ty| [&ty.type_gp_constraint, &ty.column_name_gp_constraint])
+        .flat_map(|ty| {
+            [
+                &ty.type_gp_constraint,
+                &ty.type_gp_raw_constraint,
+                &ty.column_name_gp_constraint,
+            ]
+        })
         .collect_vec();
 
     let create_func_generic_params = types
@@ -260,7 +276,7 @@ fn create_type_field_implementations(ty: &Type) -> proc_macro2::TokenStream {
     quote! {
         let #column_ident = df.column(#column_name_ident.as_ref())?;
         let #column_dtype_ident = #column_ident.dtype();
-        let #iter_ident = <#type_gp as ::polars_rows_iter::IterFromColumn>::create_iter(#column_ident)?;
+        let #iter_ident = <Option<<#type_gp as ::polars_rows_iter::IterFromColumn>::RawInner> as IterFromColumnRaw>::create_iter(#column_ident)?;
     }
 }
 

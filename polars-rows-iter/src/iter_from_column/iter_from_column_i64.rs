@@ -3,9 +3,6 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for i64 {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<i64>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -18,9 +15,6 @@ impl<'a> IterFromColumn<'a> for i64 {
 
 impl<'a> IterFromColumn<'a> for Option<i64> {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<i64>, _column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -29,21 +23,6 @@ impl<'a> IterFromColumn<'a> for Option<i64> {
     {
         Ok(polars_value)
     }
-}
-
-fn create_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a> {
-    let column_name = column.name().as_str();
-    let iter = match column.dtype() {
-        DataType::Int64 => column.i64()?.iter(),
-        DataType::Time => column.as_materialized_series().time()?.phys.iter(),
-        DataType::Datetime(_, _) => column.datetime()?.phys.iter(),
-        DataType::Duration(_) => column.duration()?.phys.iter(),
-        dtype => {
-            return Err(polars_err!(SchemaMismatch: "Cannot get i64 from column '{column_name}' with dtype : {dtype}"))
-        }
-    };
-
-    Ok(iter)
 }
 
 #[cfg(test)]

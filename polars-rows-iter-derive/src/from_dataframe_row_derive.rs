@@ -140,11 +140,12 @@ fn create_where_clause(ctx: &Context, ltp: &LifetimeParam, with_lifetime: bool) 
 
     Some(WhereClause {
         where_token: Token![where](Span::call_site()),
-        predicates: Punctuated::from_iter(
-            ctx.type_generics
-                .iter()
-                .map(|tp| create_where_predicate(tp, ltp, with_lifetime)),
-        ),
+        predicates: Punctuated::from_iter(ctx.type_generics.iter().flat_map(|tp| {
+            [
+                create_where_predicate(tp, ltp, with_lifetime),
+                create_raw_where_predicate(tp, ltp, with_lifetime),
+            ]
+        })),
     })
 }
 
@@ -154,6 +155,17 @@ fn create_where_predicate(tp: &TypeParam, ltp: &LifetimeParam, with_lifetime: bo
     let stream = match with_lifetime {
         true => quote! { #tp_ident : ::polars_rows_iter::IterFromColumn<#ltp> + #ltp },
         false => quote! { #tp_ident : ::polars_rows_iter::IterFromColumn<#ltp> },
+    };
+
+    syn::parse2(stream).expect("internal error: failed to parse generated where predicate")
+}
+
+fn create_raw_where_predicate(tp: &TypeParam, ltp: &LifetimeParam, with_lifetime: bool) -> WherePredicate {
+    let tp_ident = &tp.ident;
+
+    let stream = match with_lifetime {
+        true => quote! { Option<#tp_ident::RawInner> : ::polars_rows_iter::IterFromColumnRaw<#ltp> + #ltp },
+        false => quote! { Option<#tp_ident::RawInner> : ::polars_rows_iter::IterFromColumnRaw<#ltp> },
     };
 
     syn::parse2(stream).expect("internal error: failed to parse generated where predicate")

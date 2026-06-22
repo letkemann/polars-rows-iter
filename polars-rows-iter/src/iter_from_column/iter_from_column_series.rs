@@ -3,9 +3,6 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for Series {
     type RawInner = Series;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
-        create_series_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<Series>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -18,9 +15,6 @@ impl<'a> IterFromColumn<'a> for Series {
 
 impl<'a> IterFromColumn<'a> for Option<Series> {
     type RawInner = Series;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
-        create_series_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<Series>, _column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -29,25 +23,6 @@ impl<'a> IterFromColumn<'a> for Option<Series> {
     {
         Ok(polars_value)
     }
-}
-
-pub(crate) fn create_series_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
-    let column_name = column.name().as_str();
-    let iter: Box<dyn Iterator<Item = Option<Series>> + 'a> = match column.dtype() {
-        DataType::List(_) => Box::new(
-            column
-                .list()?
-                .amortized_iter()
-                .map(|opt| opt.map(|series| series.deep_clone())),
-        ),
-        dtype => {
-            return Err(
-                polars_err!(SchemaMismatch: "Cannot get Series from column '{column_name}' with dtype: {dtype}"),
-            )
-        }
-    };
-
-    Ok(iter)
 }
 
 #[cfg(test)]

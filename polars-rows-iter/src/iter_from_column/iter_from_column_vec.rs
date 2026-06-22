@@ -1,14 +1,12 @@
-use crate::{iter_from_column::iter_from_column_series::create_series_iter, *};
+use crate::*;
 use polars::prelude::*;
 
 impl<'a, T> IterFromColumn<'a> for Vec<T>
 where
     T: for<'inner> IterFromColumn<'inner>,
+    for<'inner> Option<<T as iter_from_column::IterFromColumn<'inner>>::RawInner>: IterFromColumnRaw<'inner> + 'inner,
 {
     type RawInner = Series;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
-        create_series_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<Series>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -25,11 +23,9 @@ where
 impl<'a, T> IterFromColumn<'a> for Option<Vec<T>>
 where
     T: for<'inner> IterFromColumn<'inner>,
+    for<'inner> Option<<T as iter_from_column::IterFromColumn<'inner>>::RawInner>: IterFromColumnRaw<'inner> + 'inner,
 {
     type RawInner = Series;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<Series>> + 'a> {
-        create_series_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<Series>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -44,15 +40,16 @@ where
 
 fn collect_inner_values<T>(series: Series, column_name: &str) -> PolarsResult<Vec<T>>
 where
-    T: for<'inner> IterFromColumn<'inner>,
+    for<'inner> T: IterFromColumn<'inner>,
+    for<'inner> Option<<T as iter_from_column::IterFromColumn<'inner>>::RawInner>: IterFromColumnRaw<'inner> + 'inner,
 {
     let column = series.into_column();
     let column_dtype = column.dtype().clone();
 
-    let result = <T as IterFromColumn>::create_iter(&column)?
+    let values = <Option<<T as IterFromColumn>::RawInner> as IterFromColumnRaw>::create_iter(&column)?
         .map(|v| <T as IterFromColumn>::get_value(v, column_name, &column_dtype))
         .collect();
-    result
+    values
 }
 
 #[cfg(test)]

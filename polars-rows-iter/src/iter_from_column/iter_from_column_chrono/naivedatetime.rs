@@ -4,12 +4,6 @@ use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for NaiveDateTime {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a>
-    where
-        Self: Sized,
-    {
-        create_datetime_iter(column)
-    }
 
     fn get_value(polars_value: Option<i64>, column_name: &str, dtype: &DataType) -> PolarsResult<Self>
     where
@@ -24,12 +18,6 @@ impl<'a> IterFromColumn<'a> for NaiveDateTime {
 
 impl<'a> IterFromColumn<'a> for Option<NaiveDateTime> {
     type RawInner = i64;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a>
-    where
-        Self: Sized,
-    {
-        create_datetime_iter(column)
-    }
 
     fn get_value(polars_value: Option<i64>, column_name: &str, dtype: &DataType) -> PolarsResult<Self>
     where
@@ -39,10 +27,6 @@ impl<'a> IterFromColumn<'a> for Option<NaiveDateTime> {
             .map(|timestamp| create_datetime(timestamp, column_name, dtype))
             .transpose()
     }
-}
-
-fn create_datetime_iter<'a>(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<i64>> + 'a> {
-    Ok(column.datetime()?.phys.iter())
 }
 
 fn create_datetime(timestamp: i64, column_name: &str, dtype: &DataType) -> PolarsResult<NaiveDateTime> {

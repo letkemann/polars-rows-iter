@@ -1,12 +1,8 @@
-use super::iter_from_column_str::create_iter;
 use super::*;
 use polars::prelude::*;
 
 impl<'a> IterFromColumn<'a> for String {
     type RawInner = &'a str;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a str>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<&'a str>, column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
@@ -21,9 +17,6 @@ impl<'a> IterFromColumn<'a> for String {
 
 impl<'a> IterFromColumn<'a> for Option<String> {
     type RawInner = &'a str;
-    fn create_iter(column: &'a Column) -> PolarsResult<impl Iterator<Item = Option<&'a str>> + 'a> {
-        create_iter(column)
-    }
 
     #[inline]
     fn get_value(polars_value: Option<&'a str>, _column_name: &str, _dtype: &DataType) -> PolarsResult<Self>
